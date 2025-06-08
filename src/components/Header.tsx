@@ -20,7 +20,7 @@ export default function Header({ isSearchPage }: HeaderProps) {
           className={cn(
             "border-r-2 border-black px-4 py-2",
             isSearchPage && "rounded-l bg-orange-700 text-white cursor-default",
-            !isSearchPage && "cursor-pointer hover:bg-neutral-100 rounded-1"
+            !isSearchPage && "cursor-pointer hover:bg-neutral-100 rounded-l"
           )}
           onClick={() => {
             if (!isSearchPage) {
