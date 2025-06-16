@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import api from "../api/api";
 
 export default function RecipeSearch() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/hello")
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message));
+    getRecipe()
   }, []);
+
+  async function getRecipe() {
+    const data = await api.getRecipe()
+    console.log(data)
+  }
 
   return (
     <div className="w-full h-screen flex flex-col">
