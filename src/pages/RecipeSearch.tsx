@@ -11,10 +11,18 @@ export default function RecipeSearch() {
   }, []);
 
   return (
-    <div className="w-full">
+    <div className="w-full h-screen flex flex-col">
       <Header isSearchPage={true} />
-      <div>
-        <h1 className="text-4xl font-bold">{message}</h1>
+
+      <div className="flex w-full flex-1">
+        {/* Filters section */}
+        <div className="h-full flex flex-col w-[25%] py-8 px-4 border-r-2 border-orange-800">
+          <p className="text-base font-medium">Filters</p>
+        </div>
+        {/* Search Section */}
+        <div className="flex flex-col px-12 py-8">
+          <p>Search</p>
+        </div>
       </div>
     </div>
   );
