@@ -10,7 +10,7 @@ export default function RecipeSearch() {
   }, []);
 
   async function getRecipe() {
-    const data = await api.getRecipe()
+    const data = await api.getRandomRecipes()
     console.log(data)
   }
 
