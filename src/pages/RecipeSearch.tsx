@@ -6,6 +6,7 @@ import RecipeCard from "../components/RecipeCard";
 
 export default function RecipeSearch() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     initialize();
@@ -13,8 +14,15 @@ export default function RecipeSearch() {
 
   async function initialize() {
     // get 6 random recipes
+    getRecipes();
+  }
+
+  // get 6 random recipes
+  async function getRecipes() {
+    setIsLoading(true);
     const recipes = await api.getRandomRecipes();
-    setRecipes(recipes);
+    setRecipes((prevRecipes) => [...prevRecipes, ...recipes]);
+    setIsLoading(false);
   }
 
   return (
@@ -38,9 +46,12 @@ export default function RecipeSearch() {
             })}
           </div>
           {/* Load more button */}
-          <div className="w-full flex justify-center">
-            <button className="cursor-pointer text-center w-24 rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-              Load more
+          <div className="w-full flex justify-center mt-3">
+            <button
+              onClick={getRecipes}
+              className="cursor-pointer text-center w-24 rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              {isLoading ? "Loading..." : "Load more"}
             </button>
           </div>
         </div>
