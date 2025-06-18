@@ -28,15 +28,21 @@ export default function RecipeSearch() {
         </div>
         {/* Search Section */}
         <div className="w-[75%] flex flex-col px-12 py-8 overflow-auto">
-          <p>Search</p>
-          <ul
+          {/* Grid of recipes */}
+          <div
             role="list"
-            className="mx-auto grid max-w-2xl grid-cols-1 gap-x-6 gap-y-20 sm:grid-cols-3 lg:mx-0 lg:max-w-none lg:gap-x-8 xl:col-span-2"
+            className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-3 lg:mx-0 lg:max-w-none lg:gap-x-8 xl:col-span-2"
           >
             {recipes.map((recipe) => {
               return <RecipeCard recipe={recipe} />;
             })}
-          </ul>
+          </div>
+          {/* Load more button */}
+          <div className="w-full flex justify-center">
+            <button className="cursor-pointer text-center w-24 rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+              Load more
+            </button>
+          </div>
         </div>
       </div>
     </div>

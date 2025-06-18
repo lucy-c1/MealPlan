@@ -3,7 +3,7 @@ import type { Recipe } from "../types/type";
 export default function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
     <div>
-      <li key={recipe.name}>
+      <div key={recipe.name}>
         <img
           alt=""
           src={recipe.imageUrl}
@@ -14,11 +14,11 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
         </h3>
         <p className="text-base/7 text-gray-600">Area: {recipe.area}</p>
         <p className="text-base/7 text-gray-600">Category: {recipe.category}</p>
-        <div className="flex justify-between items-center">
-          <div className="flex gap-1">
-            {recipe.tags.length > 0 && <p className="mt-2 text-base/7 text-gray-600">Tags: </p>}
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex flex-wrap gap-1">
+            {recipe.tags.length > 0 && <p className="text-base/7 text-gray-600">Tags: </p>}
             {recipe?.tags.map((tag) => {
-              return <p className="mt-2 text-base/7 text-gray-600">{tag}</p>;
+              return <p className="text-base/7 text-gray-600">{tag}</p>;
             })}
           </div>
           {recipe?.youtubeUrl && (
@@ -49,7 +49,7 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
             </div>
           )}
         </div>
-      </li>
+      </div>
     </div>
   );
 }
