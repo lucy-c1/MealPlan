@@ -2,18 +2,19 @@ import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import api from "../api/api";
 import type { Recipe } from "../types/type";
+import RecipeCard from "../components/RecipeCard";
 
 export default function RecipeSearch() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
 
   useEffect(() => {
-    initialize()
+    initialize();
   }, []);
 
   async function initialize() {
     // get 6 random recipes
-    const recipes = await api.getRandomRecipes()
-    setRecipes(recipes)
+    const recipes = await api.getRandomRecipes();
+    setRecipes(recipes);
   }
 
   return (
@@ -28,17 +29,14 @@ export default function RecipeSearch() {
         {/* Search Section */}
         <div className="w-[75%] flex flex-col px-12 py-8 overflow-auto">
           <p>Search</p>
-          <div>{recipes.map((recipe) => {
-            return (
-              <div>
-                <p>{recipe.id}</p>
-                <p>{recipe.name}</p>
-                <p>{recipe.area}</p>
-                <p>{recipe.category}</p>
-                <p>{recipe.instructions}</p>
-              </div>
-            )
-          })}</div>
+          <ul
+            role="list"
+            className="mx-auto grid max-w-2xl grid-cols-1 gap-x-6 gap-y-20 sm:grid-cols-3 lg:mx-0 lg:max-w-none lg:gap-x-8 xl:col-span-2"
+          >
+            {recipes.map((recipe) => {
+              return <RecipeCard recipe={recipe} />;
+            })}
+          </ul>
         </div>
       </div>
     </div>
