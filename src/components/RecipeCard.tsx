@@ -1,6 +1,11 @@
+import { useState } from "react";
 import type { Recipe } from "../types/type";
+import RecipeDetailsPopup from "./RecipeDetailsPopup";
 
 export default function RecipeCard({ recipe }: { recipe: Recipe }) {
+  // for the recipe details popup
+  const [open, setOpen] = useState(false);
+
   return (
     <div>
       <div key={recipe.name}>
@@ -9,16 +14,25 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
           src={recipe.imageUrl}
           className="aspect-3/2 w-full rounded-2xl object-cover"
         />
-        <h3 className="mt-6 text-lg/8 font-semibold text-gray-900">
+        <h3
+          className="mt-6 text-lg/8 font-semibold text-gray-900"
+          onClick={() => setOpen(true)}
+        >
           {recipe.name}
         </h3>
         <p className="text-base/7 text-gray-600">Area: {recipe.area}</p>
         <p className="text-base/7 text-gray-600">Category: {recipe.category}</p>
         <div className="flex justify-between mt-2">
           <div className="flex flex-wrap gap-1">
-            {recipe.tags.length > 0 && <p className="text-base/7 text-gray-600">Tags: </p>}
+            {recipe.tags.length > 0 && (
+              <p className="text-base/7 text-gray-600">Tags: </p>
+            )}
             {recipe?.tags.map((tag) => {
-              return <p className="text-base/7 text-gray-600 bg-neutral-100 rounded-xl px-2">{tag}</p>;
+              return (
+                <p className="text-base/7 text-gray-600 bg-neutral-100 rounded-xl px-2">
+                  {tag}
+                </p>
+              );
             })}
           </div>
           {recipe?.youtubeUrl && (
@@ -50,6 +64,8 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
           )}
         </div>
       </div>
+      {/* hidden until name is clicked */}
+      <RecipeDetailsPopup open={open} setOpen={setOpen} recipe={recipe} />
     </div>
   );
 }
