@@ -14,15 +14,15 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
         </h3>
         <p className="text-base/7 text-gray-600">Area: {recipe.area}</p>
         <p className="text-base/7 text-gray-600">Category: {recipe.category}</p>
-        <div className="flex justify-between items-center mt-2">
+        <div className="flex justify-between mt-2">
           <div className="flex flex-wrap gap-1">
             {recipe.tags.length > 0 && <p className="text-base/7 text-gray-600">Tags: </p>}
             {recipe?.tags.map((tag) => {
-              return <p className="text-base/7 text-gray-600">{tag}</p>;
+              return <p className="text-base/7 text-gray-600 bg-neutral-100 rounded-xl px-2">{tag}</p>;
             })}
           </div>
           {recipe?.youtubeUrl && (
-            <div className="flex items-center cursor-pointer">
+            <div className="flex cursor-pointer flex-col justify-end mb-1">
               <ul role="list" className="flex gap-x-6">
                 <li>
                   <a
