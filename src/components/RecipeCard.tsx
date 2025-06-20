@@ -15,7 +15,8 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
           className="aspect-3/2 w-full rounded-2xl object-cover"
         />
         <h3
-          className="mt-6 text-lg/8 font-semibold text-gray-900"
+          title="Click for more recipe info"
+          className="mt-6 text-lg/8 font-semibold text-gray-900 cursor-pointer inline-flex hover:text-gray-600"
           onClick={() => setOpen(true)}
         >
           {recipe.name}
