@@ -5,8 +5,24 @@ import { areas, categories, type Recipe } from "../types/type";
 import RecipeCard from "../components/RecipeCard";
 import { ChevronDown } from "lucide-react";
 
-function FilterSection({ name, filters }: { name: string; filters: string[] }) {
-  const [isOpen, setIsOpen] = useState<boolean>(true);
+function FilterSection({
+  name,
+  filters,
+  selectedFilters,
+  setSelectedFilters,
+}: {
+  name: string;
+  filters: string[];
+  selectedFilters: string[];
+  setSelectedFilters: React.Dispatch<React.SetStateAction<string[]>>;
+}) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  const handleCheckboxChange = (filter: string, checked: boolean) => {
+    setSelectedFilters((prev) =>
+      checked ? [...prev, filter] : prev.filter((f) => f !== filter)
+    );
+  };
 
   return (
     <div className="flex flex-col">
@@ -21,17 +37,21 @@ function FilterSection({ name, filters }: { name: string; filters: string[] }) {
       {isOpen && (
         <div className="grid grid-cols-2 mt-2">
           {filters.map((filter) => {
+            const isChecked = selectedFilters.includes(filter);
             return (
-              <div>
+              <div key={filter}>
                 <div className="flex gap-3">
                   <div className="flex h-6 shrink-0 items-center">
                     <div className="group grid size-4 grid-cols-1">
                       <input
-                        id="comments"
-                        name="comments"
+                        id={filter}
+                        name={filter}
                         type="checkbox"
-                        aria-describedby="comments-description"
-                        className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-orange-700 checked:bg-orange-700 indeterminate:border-orange-700 indeterminate:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
+                        checked={isChecked}
+                        onChange={(e) =>
+                          handleCheckboxChange(filter, e.target.checked)
+                        }
+                        className="cursor-pointer col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-orange-700 checked:bg-orange-700 indeterminate:border-orange-700 indeterminate:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
                       />
                       <svg
                         fill="none"
@@ -56,7 +76,7 @@ function FilterSection({ name, filters }: { name: string; filters: string[] }) {
                     </div>
                   </div>
                   <div className="text-sm/6">
-                    <label htmlFor="comments" className="text-gray-900">
+                    <label htmlFor={filter} className="text-gray-900 cursor-pointer">
                       {filter}
                     </label>
                   </div>
@@ -74,6 +94,12 @@ export default function RecipeSearch() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [nameSearchValue, setNameSearchValue] = useState<string>("");
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+
+  console.log(selectedCategories);
+  console.log(selectedAreas);
 
   useEffect(() => {
     initialize();
@@ -137,15 +163,23 @@ export default function RecipeSearch() {
           </form>
 
           {/* Filter by category */}
-          <FilterSection name="category" filters={[...categories]} />
+          <FilterSection
+            name="category"
+            filters={[...categories]}
+            selectedFilters={selectedCategories}
+            setSelectedFilters={setSelectedCategories}
+          />
 
           {/* Filter by area */}
-          <FilterSection name="area" filters={[...areas]} />
+          <FilterSection
+            name="area"
+            filters={[...areas]}
+            selectedFilters={selectedAreas}
+            setSelectedFilters={setSelectedAreas}
+          />
 
           <div className="w-full flex justify-center">
-            <button
-              className="cursor-pointer text-center rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700"
-            >
+            <button className="cursor-pointer text-center rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700">
               Apply Filters
             </button>
           </div>
