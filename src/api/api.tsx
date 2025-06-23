@@ -126,6 +126,17 @@ export async function getRecipesByCategoryAndArea(
   categories: string[],
   areas: string[]
 ): Promise<Recipe[]> {
+  // If one is empty, only call the other
+  if (categories.length === 0 && areas.length === 0) return [];
+
+  if (categories.length === 0) {
+    return await getRecipesByAreas(areas);
+  }
+
+  if (areas.length === 0) {
+    return await getRecipesByCategories(categories);
+  }
+  
   // Step 1: Fetch recipes by category and area in parallel
   const [categoryRecipes, areaRecipes] = await Promise.all([
     getRecipesByCategories(categories),
