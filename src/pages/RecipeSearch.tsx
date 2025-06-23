@@ -133,8 +133,8 @@ export default function RecipeSearch() {
 
   async function applyFilters() {
     setIsLoading(true);
-    // const data = await api.getRecipesByCategories(selectedCategories);
-    const data = await api.getRecipesByAreas(selectedAreas);
+    setRecipes([]);
+    const data = await api.getRecipesByCategoryAndArea(selectedCategories, selectedAreas);
     setRecipes(data);
     setIsLoading(false);
   }

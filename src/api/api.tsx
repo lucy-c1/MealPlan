@@ -122,10 +122,32 @@ export async function getRecipesByAreas(areas: string[]): Promise<Recipe[]> {
   return results.flat();
 }
 
+export async function getRecipesByCategoryAndArea(
+  categories: string[],
+  areas: string[]
+): Promise<Recipe[]> {
+  // Step 1: Fetch recipes by category and area in parallel
+  const [categoryRecipes, areaRecipes] = await Promise.all([
+    getRecipesByCategories(categories),
+    getRecipesByAreas(areas),
+  ]);
+
+  // Step 2: Create a Set of IDs from one list
+  const areaRecipeIds = new Set(areaRecipes.map((r) => r.id));
+
+  // Step 3: Filter category recipes to only those also in area recipes
+  const intersectedRecipes = categoryRecipes.filter((recipe) =>
+    areaRecipeIds.has(recipe.id)
+  );
+
+  return intersectedRecipes;
+}
+
 export default {
   getRecipe,
   getRandomRecipes,
   getRecipesByName,
   getRecipesByCategories,
   getRecipesByAreas,
+  getRecipesByCategoryAndArea,
 };
