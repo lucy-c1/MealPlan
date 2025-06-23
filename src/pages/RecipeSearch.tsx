@@ -76,7 +76,10 @@ function FilterSection({
                     </div>
                   </div>
                   <div className="text-sm/6">
-                    <label htmlFor={filter} className="text-gray-900 cursor-pointer">
+                    <label
+                      htmlFor={filter}
+                      className="text-gray-900 cursor-pointer"
+                    >
                       {filter}
                     </label>
                   </div>
@@ -124,6 +127,14 @@ export default function RecipeSearch() {
     e.preventDefault();
     setIsLoading(true);
     const data = await api.getRecipesByName(nameSearchValue);
+    setRecipes(data);
+    setIsLoading(false);
+  }
+
+  async function applyFilters() {
+    setIsLoading(true);
+    // const data = await api.getRecipesByCategories(selectedCategories);
+    const data = await api.getRecipesByAreas(selectedAreas);
     setRecipes(data);
     setIsLoading(false);
   }
@@ -179,7 +190,10 @@ export default function RecipeSearch() {
           />
 
           <div className="w-full flex justify-center">
-            <button className="cursor-pointer text-center rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700">
+            <button
+              className="cursor-pointer text-center rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700"
+              onClick={applyFilters}
+            >
               Apply Filters
             </button>
           </div>

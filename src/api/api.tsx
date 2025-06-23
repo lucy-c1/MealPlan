@@ -67,7 +67,7 @@ function rawRecipeDataToRecipe(rawRecipe: RawRecipe): Recipe {
     area: rawRecipe.strArea,
     category: rawRecipe.strCategory,
     ingredients: ingredients,
-    instructions: rawRecipe.strInstructions,
+    instructions: rawRecipe.strInstructions ?? "",
     imageUrl: rawRecipe.strMealThumb,
     tags: tagsArray ? tagsArray : [],
     ...(rawRecipe.strYoutube &&
@@ -90,8 +90,42 @@ export async function getRecipesByName(name: string): Promise<Recipe[]> {
   })?? [];
 }
 
+export async function getRecipesByCategories(categories: string[]): Promise<Recipe[]> {
+  const results = await Promise.all(
+    categories.map(async (category) => {
+      const res = await fetch(
+        `http://localhost:5000/api/search-category-details?q=${encodeURIComponent(category)}`
+      );
+      const data = await res.json();
+      const rawRecipes: RawRecipe[] = data.meals || [];
+      return rawRecipes.map((recipe : RawRecipe) => rawRecipeDataToRecipe(recipe));
+    })
+  );
+
+  // Flatten array of arrays into one array of recipes
+  return results.flat();
+}
+
+export async function getRecipesByAreas(areas: string[]): Promise<Recipe[]> {
+  const results = await Promise.all(
+    areas.map(async (area) => {
+      const res = await fetch(
+        `http://localhost:5000/api/search-area-details?q=${encodeURIComponent(area)}`
+      );
+      const data = await res.json();
+      const rawRecipes: RawRecipe[] = data.meals || [];
+      return rawRecipes.map((recipe : RawRecipe) => rawRecipeDataToRecipe(recipe));
+    })
+  );
+
+  // Flatten array of arrays into one array of recipes
+  return results.flat();
+}
+
 export default {
   getRecipe,
   getRandomRecipes,
   getRecipesByName,
+  getRecipesByCategories,
+  getRecipesByAreas,
 };
