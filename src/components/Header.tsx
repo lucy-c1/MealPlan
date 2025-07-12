@@ -12,7 +12,7 @@ export default function Header({ isSearchPage }: HeaderProps) {
   return (
     <div className="flex justify-between items-center px-8 py-4 border-b-2 border-orange-800">
       <div className="flex items-center gap-1">
-        <p className="font-medium text-base">Meal Planner</p>
+        <p className="font-medium text-base">MealPlan</p>
         <Calendar className="w-5 h-5" />
       </div>
       <div className="flex text-base font-medium">
