@@ -1,7 +1,10 @@
-import { Calendar, UserCircle } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Tooltip, TooltipContent } from "./ui/tooltip";
+import { TooltipTrigger } from "@radix-ui/react-tooltip";
 
 export type HeaderProps = {
   isSearchPage: boolean;
@@ -10,7 +13,7 @@ export type HeaderProps = {
 export default function Header({ isSearchPage }: HeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  console.log(user)
+  console.log(user);
 
   return (
     <div className="flex justify-between items-center px-8 py-4 border-b-2 border-orange-800">
@@ -48,8 +51,19 @@ export default function Header({ isSearchPage }: HeaderProps) {
           Meal Planner
         </div>
       </div>
-      <div>
-        <UserCircle className="w-5 h-5" />
+      <div className="flex">
+        <Tooltip>
+          <TooltipTrigger>
+            <Avatar>
+              <AvatarFallback>
+                <User className="w-6 h-6 text-gray-400" />
+              </AvatarFallback>
+            </Avatar>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{user?.email}</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
