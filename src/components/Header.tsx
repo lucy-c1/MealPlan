@@ -1,6 +1,7 @@
 import { Calendar, UserCircle } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthContext";
 
 export type HeaderProps = {
   isSearchPage: boolean;
@@ -8,6 +9,8 @@ export type HeaderProps = {
 
 export default function Header({ isSearchPage }: HeaderProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  console.log(user)
 
   return (
     <div className="flex justify-between items-center px-8 py-4 border-b-2 border-orange-800">

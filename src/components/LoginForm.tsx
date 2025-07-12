@@ -7,10 +7,12 @@ import {
 import { toast } from "react-toastify";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +22,7 @@ export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
         await signInWithEmailAndPassword(auth, email, password);
         console.log("Logged in!");
         toast.success("Logged in!");
+        navigate("/")
       } else {
         // Signup flow
         const userCredential = await createUserWithEmailAndPassword(
@@ -38,6 +41,7 @@ export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
 
         console.log("Signed up and user saved!");
         toast.success("Account created!");
+        navigate("/")
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
