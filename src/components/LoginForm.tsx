@@ -1,18 +1,30 @@
 import { useState } from "react";
+import { auth } from "../firebase";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
 
 export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
-    if (mode === "login") {
-      console.log("Logging in with:", { email, password });
-      // Add login logic
-    } else {
-      console.log("Signing up with:", { email, password });
-      // Add signup logic
+    try {
+      if (mode === "login") {
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log("Logged in!");
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+        console.log("Signed up!");
+      }
+    } catch (err: any) {
+      console.error(err.message);
+      setError(err.message);
     }
   };
 
