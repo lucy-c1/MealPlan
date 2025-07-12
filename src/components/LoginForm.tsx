@@ -4,15 +4,14 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from "firebase/auth";
+import { toast } from "react-toastify";
 
 export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     try {
       if (mode === "login") {
@@ -22,9 +21,14 @@ export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
         await createUserWithEmailAndPassword(auth, email, password);
         console.log("Signed up!");
       }
-    } catch (err: any) {
-      console.error(err.message);
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Auth error:", err.message);
+        toast.error(err.message);
+      } else {
+        console.error("Unknown error", err);
+        toast.error("An unknown error occurred");
+      }
     }
   };
 
