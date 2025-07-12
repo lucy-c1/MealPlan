@@ -5,6 +5,8 @@ import {
   createUserWithEmailAndPassword,
 } from "firebase/auth";
 import { toast } from "react-toastify";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
@@ -17,9 +19,25 @@ export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
       if (mode === "login") {
         await signInWithEmailAndPassword(auth, email, password);
         console.log("Logged in!");
+        toast.success("Logged in!");
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-        console.log("Signed up!");
+        // Signup flow
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+        const user = userCredential.user;
+
+        // Save user info to Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          createdAt: new Date().toISOString(),
+          // add other fields here if needed
+        });
+
+        console.log("Signed up and user saved!");
+        toast.success("Account created!");
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

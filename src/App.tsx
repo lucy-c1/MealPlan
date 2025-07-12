@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import MealPlan from "./pages/MealPlan";
 import RecipeSearch from "./pages/RecipeSearch";
 import Login from "./pages/login";
+import { AuthProvider } from "./AuthContext";
 
 const router = createBrowserRouter([
   {
@@ -23,7 +24,7 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <RouterProvider router={router} />
       <ToastContainer
         position="bottom-right"
@@ -36,6 +37,6 @@ export default function App() {
         pauseOnHover
         theme="light"
       />
-    </>
+    </AuthProvider>
   );
 }
