@@ -25,12 +25,10 @@ export default function RecipeCard({
   console.log(userRecipes);
 
   async function handleSaveRecipe(recipe: Recipe) {
-    if (alreadySaved) {
+    if (alreadySaved || isStarClicked) {
       toast("Recipe already saved!");
       return; // Don't save again
     }
-
-    setIsStarClicked(true);
 
     if (!user) {
       toast.error("You must be logged in to save recipes.");
@@ -40,6 +38,7 @@ export default function RecipeCard({
     try {
       await addRecipe(user.uid, recipe);
       toast.success("Recipe saved!");
+      setIsStarClicked(true);
     } catch (error) {
       console.error("Failed to save recipe:", error);
       toast.error("Failed to save recipe. Please try again.");
