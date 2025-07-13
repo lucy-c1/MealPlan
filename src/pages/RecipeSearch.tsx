@@ -4,6 +4,8 @@ import api from "../api/api";
 import { areas, categories, type Recipe } from "../types/type";
 import RecipeCard from "../components/RecipeCard";
 import { ChevronDown } from "lucide-react";
+import { getUserRecipes } from "@/RecipeDB/recipeDB";
+import { useAuth } from "@/AuthContext";
 
 function FilterSection({
   name,
@@ -94,7 +96,9 @@ function FilterSection({
 }
 
 export default function RecipeSearch() {
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [nameSearchValue, setNameSearchValue] = useState<string>("");
 
@@ -105,12 +109,24 @@ export default function RecipeSearch() {
   console.log(selectedAreas);
 
   useEffect(() => {
-    initialize();
-  }, []);
+    if (user?.uid) {
+      initialize();
+    }
+  }, [user]);
 
   async function initialize() {
-    // get 6 random recipes
-    getRecipes();
+    setIsLoading(true);
+
+    // fetch 6 random recipes (your existing API call)
+    await getRecipes();
+
+    // fetch user saved recipes from Firestore
+    if (user) {
+      const saved = await getUserRecipes(user.uid);
+      setUserRecipes(saved);
+    }
+
+    setIsLoading(false);
   }
 
   console.log(recipes);
@@ -134,7 +150,10 @@ export default function RecipeSearch() {
   async function applyFilters() {
     setIsLoading(true);
     setRecipes([]);
-    const data = await api.getRecipesByCategoryAndArea(selectedCategories, selectedAreas);
+    const data = await api.getRecipesByCategoryAndArea(
+      selectedCategories,
+      selectedAreas
+    );
     setRecipes(data);
     setIsLoading(false);
   }
@@ -207,7 +226,9 @@ export default function RecipeSearch() {
           >
             {recipes.length != 0
               ? recipes.map((recipe) => {
-                  return <RecipeCard recipe={recipe} />;
+                  return (
+                    <RecipeCard recipe={recipe} userRecipes={userRecipes} />
+                  );
                 })
               : !isLoading && <p>No recipes found</p>}
           </div>

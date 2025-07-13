@@ -7,14 +7,29 @@ import { addRecipe } from "@/RecipeDB/recipeDB";
 import { useAuth } from "@/AuthContext";
 import { toast } from "react-toastify";
 
-export default function RecipeCard({ recipe }: { recipe: Recipe }) {
+export default function RecipeCard({
+  recipe,
+  userRecipes,
+}: {
+  recipe: Recipe;
+  userRecipes: Recipe[];
+}) {
   // for the recipe details popup
   const [open, setOpen] = useState(false);
   const [isStarClicked, setIsStarClicked] = useState(false);
 
+  const alreadySaved = userRecipes.some((r) => r.id === recipe.id);
+
   const { user } = useAuth();
 
+  console.log(userRecipes);
+
   async function handleSaveRecipe(recipe: Recipe) {
+    if (alreadySaved) {
+      toast("Recipe already saved!");
+      return; // Don't save again
+    }
+
     setIsStarClicked(true);
 
     if (!user) {
@@ -41,7 +56,7 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
         <Star
           className={cn(
             "w-6 h-6 text-yellow-400",
-            isStarClicked && "fill-yellow-400"
+            (isStarClicked || alreadySaved) && "fill-yellow-400"
           )}
         />
       </div>

@@ -1,4 +1,4 @@
-import { doc, setDoc, collection, addDoc } from "firebase/firestore";
+import { doc, setDoc, collection, addDoc, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import type { Recipe } from "@/types/type";
 
@@ -40,6 +40,30 @@ export async function addRecipe(userId: string, recipe: Recipe) {
     }
   } catch (error) {
     console.error("Failed to save recipe:", error);
+  }
+}
+
+/**
+ * Fetches all recipes saved by the user from their "recipes" subcollection.
+ * 
+ * @param userId - The unique ID of the user in the "users" collection.
+ * @returns An array of Recipe objects saved by the user.
+ */
+export async function getUserRecipes(userId: string): Promise<Recipe[]> {
+  try {
+    const recipesCol = collection(db, "users", userId, "recipes");
+    const snapshot = await getDocs(recipesCol);
+
+    const recipes: Recipe[] = [];
+    snapshot.forEach((doc) => {
+      // Include doc.id if your Recipe type requires it
+      recipes.push({ id: doc.id, ...doc.data() } as Recipe);
+    });
+
+    return recipes;
+  } catch (error) {
+    console.error("Failed to fetch user recipes:", error);
+    return [];
   }
 }
 
