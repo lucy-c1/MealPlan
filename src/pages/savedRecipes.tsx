@@ -1,6 +1,6 @@
 import { useAuth } from "@/AuthContext";
 import Header from "@/components/Header";
-import { getUserRecipes, updateRecipe } from "@/RecipeDB/recipeDB";
+import { addRecipe, getUserRecipes, updateRecipe } from "@/RecipeDB/recipeDB";
 import type { Area, Category, Recipe, RecipeIngredient } from "@/types/type";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -16,6 +16,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import RecipeEditPopup from "@/components/RecipeEditPopup";
 import { toast } from "react-toastify";
+import { AddCustomRecipeSheet } from "@/components/AddCustomRecipeSheet";
 
 type RecipeCardItem = {
   id: string;
@@ -102,6 +103,24 @@ export default function SavedRecipes() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  async function handleSaveRecipe(recipe: Recipe) {
+    try {
+      if (!user || !user.uid) {
+        console.error("User not logged in. Cannot save recipe.");
+        toast.error("Please log in to save your recipe.");
+        return;
+      }
+
+      await addRecipe(user.uid, recipe);
+
+      console.log("Recipe saved successfully!");
+      toast.success("Recipe saved!");
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      toast.error("Error saving recipe");
+    }
+  }
+
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       <Header activePage="saved" />
@@ -118,9 +137,7 @@ export default function SavedRecipes() {
           />
         </div>
         {/* Add Custom Recipe Button */}
-        <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-          + Add Custom Recipe
-        </button>
+        <AddCustomRecipeSheet onSave={handleSaveRecipe} />
       </div>
 
       {/* Scrollable content area */}
