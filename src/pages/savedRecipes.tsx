@@ -113,6 +113,18 @@ export default function SavedRecipes() {
 
       await addRecipe(user.uid, recipe);
 
+      // Update local recipes list:
+      setUserRecipes((prev) => {
+        const exists = prev.find((r) => r.id === recipe.id);
+        if (exists) {
+          // Update existing recipe
+          return prev.map((r) => (r.id === recipe.id ? recipe : r));
+        } else {
+          // Add new recipe
+          return [...prev, recipe];
+        }
+      });
+
       console.log("Recipe saved successfully!");
       toast.success("Recipe saved!");
     } catch (error) {
@@ -182,21 +194,33 @@ export default function SavedRecipes() {
               onSave={async (updatedRecipe) => {
                 try {
                   if (!updatedRecipe.id) {
-                    toast.error("Missing recipe ID for update.");
+                    console.error("Missing recipe ID for update.");
+                    toast.error("Cannot find recipe");
                     return;
                   }
 
                   if (!user || !user.uid) {
-                    toast.error("User is not logged in. Cannot update recipe.");
+                    console.error(
+                      "User is not logged in. Cannot update recipe."
+                    );
+                    toast.error("Please log in first");
                     return;
                   }
 
                   const userId = user.uid;
 
                   await updateRecipe(userId, updatedRecipe.id, updatedRecipe);
+                  // Update local userRecipes state:
+                  setUserRecipes((prevRecipes) =>
+                    prevRecipes.map((r) =>
+                      r.id === updatedRecipe.id ? updatedRecipe : r
+                    )
+                  );
+
                   toast.success("Recipe saved!");
                 } catch (error) {
                   console.error("Error saving recipe:", error);
+                  toast.error("Error saving recipe");
                 }
               }}
             />
