@@ -1,4 +1,11 @@
-import { doc, setDoc, collection, addDoc, getDocs } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import type { Recipe } from "@/types/type";
 
@@ -45,7 +52,7 @@ export async function addRecipe(userId: string, recipe: Recipe) {
 
 /**
  * Fetches all recipes saved by the user from their "recipes" subcollection.
- * 
+ *
  * @param userId - The unique ID of the user in the "users" collection.
  * @returns An array of Recipe objects saved by the user.
  */
@@ -67,6 +74,31 @@ export async function getUserRecipes(userId: string): Promise<Recipe[]> {
   }
 }
 
+/**
+ * Updates specific fields of an existing recipe in a user's "recipes" subcollection.
+ *
+ * @param userId - The ID of the user who owns the recipe.
+ * @param recipeId - The ID of the recipe to update.
+ * @param updatedFields - An object with the fields to update (only these will be modified).
+ *
+ * Example:
+ * updateRecipe("user123", "recipe456", { name: "Updated Name", instructions: "New steps" });
+ */
+export async function updateRecipe(
+  userId: string,
+  recipeId: string,
+  updatedFields: Partial<Recipe>
+) {
+  try {
+    const recipeRef = doc(db, "users", userId, "recipes", recipeId);
+    await updateDoc(recipeRef, updatedFields);
+    console.log("Recipe updated:", recipeId);
+  } catch (error) {
+    console.error("Failed to update recipe:", error);
+  }
+}
+
 export default {
   addRecipe,
+  updateRecipe,
 };

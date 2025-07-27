@@ -1,6 +1,6 @@
 import { useAuth } from "@/AuthContext";
 import Header from "@/components/Header";
-import { getUserRecipes } from "@/RecipeDB/recipeDB";
+import { getUserRecipes, updateRecipe } from "@/RecipeDB/recipeDB";
 import type { Area, Category, Recipe, RecipeIngredient } from "@/types/type";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -14,6 +14,8 @@ import {
 } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import RecipeEditPopup from "@/components/RecipeEditPopup";
+import { toast } from "react-toastify";
 
 type RecipeCardItem = {
   id: string;
@@ -40,6 +42,8 @@ export default function SavedRecipes() {
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (user?.uid) {
@@ -132,7 +136,15 @@ export default function SavedRecipes() {
               <h3
                 title="Click for more recipe info"
                 className="mt-6 text-lg/8 font-semibold text-gray-900 cursor-pointer inline-flex hover:text-gray-600"
-                onClick={() => {}}
+                onClick={() => {
+                  const recipe = userRecipes.find(
+                    (r) => r.id == row.original.id
+                  );
+                  if (recipe) {
+                    setSelectedRecipe(recipe); // set the clicked recipe
+                    setOpen(true); // open the popup
+                  }
+                }}
               >
                 {row.original.name}
               </h3>
@@ -142,10 +154,36 @@ export default function SavedRecipes() {
               <p className="text-base/7 text-gray-600">
                 Category: {row.original.category}
               </p>
-
-              {/* ... your tags and YouTube icon ... */}
             </div>
           ))}
+
+          {selectedRecipe && (
+            <RecipeEditPopup
+              open={open}
+              setOpen={setOpen}
+              recipe={selectedRecipe}
+              onSave={async (updatedRecipe) => {
+                try {
+                  if (!updatedRecipe.id) {
+                    toast.error("Missing recipe ID for update.");
+                    return;
+                  }
+
+                  if (!user || !user.uid) {
+                    toast.error("User is not logged in. Cannot update recipe.");
+                    return;
+                  }
+
+                  const userId = user.uid;
+
+                  await updateRecipe(userId, updatedRecipe.id, updatedRecipe);
+                  toast.success("Recipe saved!");
+                } catch (error) {
+                  console.error("Error saving recipe:", error);
+                }
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
