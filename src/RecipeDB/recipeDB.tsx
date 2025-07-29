@@ -5,9 +5,14 @@ import {
   addDoc,
   getDocs,
   updateDoc,
+  getDoc,
+  query,
+  where,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import type { Recipe } from "@/types/type";
+import type { Recipe, Plan, Day, Meal, DayOfWeek } from "@/types/type";
+import { Timestamp } from "firebase/firestore";
 
 /**
  * Adds or updates a recipe in a user's "recipes" subcollection in Firestore.
@@ -95,6 +100,104 @@ export async function updateRecipe(
     console.log("Recipe updated:", recipeId);
   } catch (error) {
     console.error("Failed to update recipe:", error);
+  }
+}
+
+/**
+ * Saves a meal plan to the user's "plans" subcollection in Firestore.
+ *
+ * @param userId - The unique ID of the user in the "users" collection.
+ * @param plan - The plan object to store.
+ */
+export async function savePlan(userId: string, plan: Plan) {
+  try {
+    const planData = {
+      startDate: plan.startDate,
+      endDate: plan.endDate,
+      days: plan.days,
+    };
+
+    if (plan.id) {
+      const planRef = doc(db, "users", userId, "plans", plan.id);
+      await setDoc(planRef, planData);
+      console.log("Plan saved with ID:", plan.id);
+    } else {
+      const plansCol = collection(db, "users", userId, "plans");
+      const docRef = await addDoc(plansCol, planData);
+      console.log("Plan saved with auto-generated ID:", docRef.id);
+    }
+  } catch (error) {
+    console.error("Failed to save plan:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches all meal plans saved by the user from their "plans" subcollection.
+ *
+ * @param userId - The unique ID of the user in the "users" collection.
+ * @returns An array of Plan objects saved by the user.
+ */
+export async function getUserPlans(userId: string): Promise<Plan[]> {
+  try {
+    const plansCol = collection(db, "users", userId, "plans");
+    const q = query(plansCol, orderBy("startDate", "desc"));
+    const snapshot = await getDocs(q);
+
+    const plans: Plan[] = [];
+    snapshot.forEach((doc) => {
+      plans.push({ id: doc.id, ...doc.data() } as Plan);
+    });
+
+    return plans;
+  } catch (error) {
+    console.error("Failed to fetch user plans:", error);
+    return [];
+  }
+}
+
+/**
+ * Fetches a specific meal plan by ID.
+ *
+ * @param userId - The unique ID of the user in the "users" collection.
+ * @param planId - The ID of the plan to fetch.
+ * @returns The Plan object or null if not found.
+ */
+export async function getPlanById(userId: string, planId: string): Promise<Plan | null> {
+  try {
+    const planRef = doc(db, "users", userId, "plans", planId);
+    const planDoc = await getDoc(planRef);
+    
+    if (planDoc.exists()) {
+      return { id: planDoc.id, ...planDoc.data() } as Plan;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch plan:", error);
+    return null;
+  }
+}
+
+/**
+ * Updates a specific meal plan.
+ *
+ * @param userId - The ID of the user who owns the plan.
+ * @param planId - The ID of the plan to update.
+ * @param updatedPlan - The updated plan data.
+ */
+export async function updatePlan(
+  userId: string,
+  planId: string,
+  updatedPlan: Partial<Plan>
+) {
+  try {
+    const planRef = doc(db, "users", userId, "plans", planId);
+    await updateDoc(planRef, updatedPlan);
+    console.log("Plan updated:", planId);
+  } catch (error) {
+    console.error("Failed to update plan:", error);
+    throw error;
   }
 }
 

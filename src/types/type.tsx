@@ -1,3 +1,5 @@
+import type { Timestamp } from "firebase/firestore";
+
 const areas = [
   "American",
   "British",
@@ -124,6 +126,34 @@ type RawRecipe = {
   strYoutube: string;
 };
 
-export type { Category, Area, RecipeIngredient, Recipe, RawRecipe };
+type DayOfWeek =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
+
+type Plan = {
+  id: string;
+  startDate: Timestamp;
+  endDate: Timestamp;
+  days: [Day, Day, Day, Day, Day, Day, Day];
+};
+
+type Day = {
+  dayOfWeek: DayOfWeek;
+  meals: Meal[];
+};
+
+type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snack";
+
+type Meal = {
+  category: MealType;
+  recipeId: string; // references a Recipe
+};
+
+export type { Category, Area, RecipeIngredient, Recipe, RawRecipe, Plan, Day, Meal, MealType, DayOfWeek };
 
 export { categories, areas };
