@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Save, Loader2 } from "lucide-react";
+import { CalendarIcon, Save, Loader2, X } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -280,10 +280,17 @@ export default function MealPlan() {
       }),
     }));
 
+    const handleRemove = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setPlacedRecipes((prev) => 
+        prev.filter((r) => !(r.dayIndex === dayIndex && r.meal === meal))
+      );
+    };
+
     return (
       <div
         ref={drag as any}
-        className={`cursor-move ${isDragging ? "opacity-50" : "opacity-100"}`}
+        className={`relative cursor-move ${isDragging ? "opacity-50" : "opacity-100"}`}
       >
         <img
           src={recipe.imageUrl}
@@ -291,6 +298,15 @@ export default function MealPlan() {
           className="h-16 w-full object-cover rounded"
         />
         <p className="text-sm truncate">{recipe.name}</p>
+        
+        {/* Remove button */}
+        <button
+          onClick={handleRemove}
+          className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-colors"
+          title="Remove recipe"
+        >
+          <X className="w-3 h-3" />
+        </button>
       </div>
     );
   }
