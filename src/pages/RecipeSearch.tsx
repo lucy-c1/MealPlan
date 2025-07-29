@@ -226,10 +226,10 @@ export default function RecipeSearch() {
           >
             {recipes.length != 0
               ? recipes.map((recipe) => {
-                  return (
-                    <RecipeCard recipe={recipe} userRecipes={userRecipes} />
-                  );
-                })
+                return (
+                  <RecipeCard recipe={recipe} userRecipes={userRecipes} />
+                );
+              })
               : !isLoading && <p>No recipes found</p>}
           </div>
           {/* Load more button */}

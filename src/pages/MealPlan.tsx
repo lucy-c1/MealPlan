@@ -17,6 +17,12 @@ type PlacedRecipe = {
   meal: MealSlot;
 };
 
+type DragItem = {
+  recipe: Recipe;
+  dayIndex?: number;
+  meal?: MealSlot;
+};
+
 export default function MealPlan() {
   const { user } = useAuth();
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
@@ -39,7 +45,7 @@ export default function MealPlan() {
 
   // Drag source for recipes
   function RecipeCard({ recipe }: { recipe: Recipe }) {
-    const [{ isDragging }, drag] = useDrag(() => ({
+    const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
       type: "RECIPE",
       item: { recipe },
       collect: (monitor) => ({
@@ -49,8 +55,7 @@ export default function MealPlan() {
 
     return (
       <div
-        // @ts-ignore-error
-        ref={drag}
+        ref={drag as any}
         className={`border rounded p-2 mb-2 cursor-move bg-white ${
           isDragging ? "opacity-50" : "opacity-100"
         }`}
@@ -67,13 +72,13 @@ export default function MealPlan() {
 
   // Drop target for grid cells
   function MealCell({ dayIndex, meal }: { dayIndex: number; meal: MealSlot }) {
-    const [{ isOver, canDrop }, drop] = useDrop(() => ({
+    const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>(() => ({
       accept: ["RECIPE", "PLACED_RECIPE"],
-      drop: (item) => {
+      drop: (item: DragItem) => {
         setPlacedRecipes((prev) => {
           // Remove the recipe from its old cell if it is a moved recipe
           let filtered = prev;
-          if ("dayIndex" in item && "meal" in item) {
+          if ("dayIndex" in item && "meal" in item && item.dayIndex !== undefined && item.meal !== undefined) {
             filtered = prev.filter(
               (r) => !(r.dayIndex === item.dayIndex && r.meal === item.meal)
             );
@@ -97,7 +102,7 @@ export default function MealPlan() {
 
     return (
       <div
-        ref={drop}
+        ref={drop as any}
         className={`border h-32 p-1 flex flex-col items-center justify-center rounded ${
           isOver && canDrop ? "bg-green-200" : "bg-gray-50"
         }`}
@@ -116,8 +121,16 @@ export default function MealPlan() {
     );
   }
 
-  function DraggablePlacedRecipe({ recipe, dayIndex, meal }) {
-    const [{ isDragging }, drag] = useDrag(() => ({
+  function DraggablePlacedRecipe({ 
+    recipe, 
+    dayIndex, 
+    meal 
+  }: { 
+    recipe: Recipe; 
+    dayIndex: number; 
+    meal: MealSlot; 
+  }) {
+    const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
       type: "PLACED_RECIPE",
       item: { recipe, dayIndex, meal },
       collect: (monitor) => ({
@@ -127,7 +140,7 @@ export default function MealPlan() {
 
     return (
       <div
-        ref={drag}
+        ref={drag as any}
         className={`cursor-move ${isDragging ? "opacity-50" : "opacity-100"}`}
       >
         <img
