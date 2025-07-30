@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Save, Loader2, X } from "lucide-react";
+import { CalendarIcon, Save, Loader2, X, ChefHat, Clock, CheckCircle } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -198,16 +198,27 @@ export default function MealPlan() {
     return (
       <div
         ref={drag as any}
-        className={`border rounded p-2 mb-2 cursor-move bg-white ${
+        className={`group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 cursor-move ${
           isDragging ? "opacity-50" : "opacity-100"
         }`}
       >
-        <img
-          src={recipe.imageUrl}
-          alt={recipe.name}
-          className="w-full h-24 object-cover rounded"
-        />
-        <p className="mt-1 text-center font-semibold">{recipe.name}</p>
+        <div className="relative">
+          <img
+            src={recipe.imageUrl}
+            alt={recipe.name}
+            className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+            <div className="flex items-center gap-1 text-white text-xs">
+              <ChefHat className="w-3 h-3" />
+              <span className="font-medium">{recipe.area}</span>
+            </div>
+          </div>
+        </div>
+        <div className="p-3">
+          <p className="text-sm font-semibold text-gray-900 truncate">{recipe.name}</p>
+          <p className="text-xs text-gray-600 mt-1">{recipe.category}</p>
+        </div>
       </div>
     );
   }
@@ -242,14 +253,30 @@ export default function MealPlan() {
       (r) => r.dayIndex === dayIndex && r.meal === meal
     );
 
+    const getMealIcon = (meal: MealSlot) => {
+      switch (meal) {
+        case "breakfast": return "🌅";
+        case "lunch": return "☀️";
+        case "dinner": return "🌙";
+        default: return "🍽️";
+      }
+    };
+
     return (
       <div
         ref={drop as any}
-        className={`border h-32 p-1 flex flex-col items-center justify-center rounded ${
-          isOver && canDrop ? "bg-green-200" : "bg-gray-50"
+        className={`border-2 border-dashed rounded-xl p-3 flex flex-col items-center justify-center min-h-[120px] transition-all duration-200 ${
+          isOver && canDrop 
+            ? "bg-green-100 border-green-400" 
+            : placedRecipe 
+              ? "bg-white border-gray-200" 
+              : "bg-gray-50 border-gray-200"
         }`}
       >
-        <div className="text-xs font-semibold mb-1">{meal}</div>
+        <div className="text-xs font-semibold mb-2 text-gray-600 flex items-center gap-1">
+          {getMealIcon(meal)}
+          <span className="capitalize">{meal}</span>
+        </div>
         {placedRecipe ? (
           <DraggablePlacedRecipe
             recipe={placedRecipe.recipe}
@@ -257,7 +284,12 @@ export default function MealPlan() {
             meal={meal}
           />
         ) : (
-          <span className="text-gray-400 text-xs">Drop recipe here</span>
+          <div className="text-center">
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-2">
+              <ChefHat className="w-4 h-4 text-gray-400" />
+            </div>
+            <span className="text-gray-400 text-xs">Drop recipe here</span>
+          </div>
         )}
       </div>
     );
@@ -292,21 +324,21 @@ export default function MealPlan() {
         ref={drag as any}
         className={`relative cursor-move ${isDragging ? "opacity-50" : "opacity-100"}`}
       >
-        <img
-          src={recipe.imageUrl}
-          alt={recipe.name}
-          className="h-16 w-full object-cover rounded"
-        />
-        <p className="text-sm truncate">{recipe.name}</p>
-        
-        {/* Remove button */}
-        <button
-          onClick={handleRemove}
-          className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-colors"
-          title="Remove recipe"
-        >
-          <X className="w-3 h-3" />
-        </button>
+        <div className="relative">
+          <img
+            src={recipe.imageUrl}
+            alt={recipe.name}
+            className="h-16 w-full object-cover rounded-lg"
+          />
+          <button
+            onClick={handleRemove}
+            className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-colors"
+            title="Remove recipe"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+        <p className="text-xs font-medium text-gray-900 truncate mt-1">{recipe.name}</p>
       </div>
     );
   }
@@ -315,97 +347,129 @@ export default function MealPlan() {
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
   return (
-    <div>
+    <div className="h-screen flex flex-col bg-gray-50">
       <Header activePage="plan" />
       <DndProvider backend={HTML5Backend}>
-        <div className="flex h-screen gap-4 p-4 bg-gray-100">
+        <div className="flex flex-1 gap-6 p-6">
           {/* Left column: user recipes */}
-          <div className="w-72 overflow-y-auto bg-white p-4 rounded shadow">
-            <h2 className="text-lg font-bold mb-4">Your Recipes</h2>
-            {userRecipes.length === 0 && <p>No recipes found.</p>}
-            {userRecipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
-            ))}
+          <div className="w-80 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                  <ChefHat className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Your Recipes</h2>
+                  <p className="text-sm text-gray-600">Drag recipes to plan your week</p>
+                </div>
+              </div>
+              {userRecipes.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <ChefHat className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">No recipes found</p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {userRecipes.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
           </div>
 
-          {/* Right grid: 7 columns x 3 rows */}
-          <div className="flex-1 overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-4">
-                <h2 className="text-lg font-bold">Meal Plan</h2>
-                
-                {/* Date Selector */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[240px] justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => date && setSelectedDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+          {/* Right grid: meal planning area */}
+          <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg">
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900">Meal Plan</h2>
+                      <p className="text-sm text-gray-600">Plan your weekly meals</p>
+                    </div>
+                  </div>
+                  
+                  {/* Date Selector */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20",
+                          !selectedDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => date && setSelectedDate(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
 
-                {/* Week Display */}
-                <div className="text-sm text-gray-600">
-                  {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
+                  {/* Week Display */}
+                  <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
+                    {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
+                  </div>
+
+                  {/* Plan Status */}
+                  {currentPlan && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-lg">
+                      <CheckCircle className="w-4 h-4" />
+                      Plan exists
+                    </div>
+                  )}
                 </div>
 
-                {/* Plan Status */}
-                {currentPlan && (
-                  <div className="text-sm text-green-600 font-medium">
-                    ✓ Plan exists
-                  </div>
-                )}
+                <Button 
+                  onClick={handleSavePlan}
+                  disabled={isSaving || placedRecipes.length === 0}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {isSaving ? "Saving..." : currentPlan ? "Update Plan" : "Save Plan"}
+                </Button>
               </div>
-
-              <Button 
-                onClick={handleSavePlan}
-                disabled={isSaving || placedRecipes.length === 0}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                {isSaving ? "Saving..." : currentPlan ? "Update Plan" : "Save Plan"}
-              </Button>
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
-              {/* Header row with days */}
-              {days.map((day) => (
-                <div
-                  key={day}
-                  className="text-center font-semibold p-1 bg-gray-200 rounded"
-                >
-                  {day}
-                </div>
-              ))}
+            <div className="p-6">
+              <div className="grid grid-cols-7 gap-3">
+                {/* Header row with days */}
+                {days.map((day) => (
+                  <div
+                    key={day}
+                    className="text-center font-semibold p-3 bg-gray-50 rounded-xl text-gray-700"
+                  >
+                    {day}
+                  </div>
+                ))}
 
-              {/* For each meal (row) x day (column) */}
-              {meals.map((meal) =>
-                days.map((_, dayIndex) => (
-                  <MealCell
-                    key={`${meal}-${dayIndex}`}
-                    meal={meal}
-                    dayIndex={dayIndex}
-                  />
-                ))
-              )}
+                {/* For each meal (row) x day (column) */}
+                {meals.map((meal) =>
+                  days.map((_, dayIndex) => (
+                    <MealCell
+                      key={`${meal}-${dayIndex}`}
+                      meal={meal}
+                      dayIndex={dayIndex}
+                    />
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
