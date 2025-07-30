@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import api from "../api/api";
 import { areas, categories, type Recipe } from "../types/type";
 import RecipeCard from "../components/RecipeCard";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search, Filter } from "lucide-react";
 import { getUserRecipes } from "@/RecipeDB/recipeDB";
 import { useAuth } from "@/AuthContext";
 
@@ -27,64 +27,58 @@ function FilterSection({
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="space-y-4">
       <div
-        className="flex justify-between cursor-pointer"
+        className="flex justify-between items-center cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        <p className="font-semibold">Filter by {name}</p>
-        <ChevronDown className="w-5 h-5" />
+        <p className="font-semibold text-gray-900 flex items-center gap-2">
+          <Filter className="w-4 h-4 text-blue-500" />
+          Filter by {name}
+        </p>
+        <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </div>
 
       {isOpen && (
-        <div className="grid grid-cols-2 mt-2">
+        <div className="grid grid-cols-2 gap-3 pl-3">
           {filters.map((filter) => {
             const isChecked = selectedFilters.includes(filter);
             return (
-              <div key={filter}>
-                <div className="flex gap-3">
-                  <div className="flex h-6 shrink-0 items-center">
-                    <div className="group grid size-4 grid-cols-1">
-                      <input
-                        id={filter}
-                        name={filter}
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) =>
-                          handleCheckboxChange(filter, e.target.checked)
-                        }
-                        className="cursor-pointer col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-orange-700 checked:bg-orange-700 indeterminate:border-orange-700 indeterminate:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto"
-                      />
-                      <svg
-                        fill="none"
-                        viewBox="0 0 14 14"
-                        className="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25"
-                      >
-                        <path
-                          d="M3 8L6 11L11 3.5"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="opacity-0 group-has-checked:opacity-100"
-                        />
-                        <path
-                          d="M3 7H11"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="opacity-0 group-has-indeterminate:opacity-100"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="text-sm/6">
-                    <label
-                      htmlFor={filter}
-                      className="text-gray-900 cursor-pointer"
+              <div key={filter} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                <div className="flex h-5 shrink-0 items-center">
+                  <div className="group grid size-4 grid-cols-1">
+                    <input
+                      id={filter}
+                      name={filter}
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) =>
+                        handleCheckboxChange(filter, e.target.checked)
+                      }
+                      className="cursor-pointer col-start-1 row-start-1 appearance-none rounded border border-gray-300 bg-white checked:border-blue-500 checked:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                    />
+                    <svg
+                      fill="none"
+                      viewBox="0 0 14 14"
+                      className="pointer-events-none col-start-1 row-start-1 size-3 self-center justify-self-center stroke-white"
                     >
-                      {filter}
-                    </label>
+                      <path
+                        d="M3 8L6 11L11 3.5"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="opacity-0 group-has-checked:opacity-100"
+                      />
+                    </svg>
                   </div>
+                </div>
+                <div className="text-sm">
+                  <label
+                    htmlFor={filter}
+                    className="text-gray-700 cursor-pointer font-medium"
+                  >
+                    {filter}
+                  </label>
                 </div>
               </div>
             );
@@ -159,87 +153,115 @@ export default function RecipeSearch() {
   }
 
   return (
-    <div className="w-full h-screen flex flex-col">
+    <div className="w-full h-screen flex flex-col bg-gray-50">
       <Header activePage="search" />
 
       <div className="flex w-full flex-1 min-h-0">
         {/* Filters section */}
-        <div className="h-full flex flex-col w-[25%] pt-8 px-4 border-r-2 border-orange-800 overflow-auto gap-4 scrollbar-hide">
-          <form
-            className="sm:flex sm:max-w-md"
-            onSubmit={(e) => handleNameSearchSubmit(e)}
-          >
-            <label htmlFor="name-search" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="name-search"
-              name="name-search"
-              type="text"
-              required
-              placeholder="Search recipe by name"
-              value={nameSearchValue}
-              onChange={(e) => setNameSearchValue(e.target.value)}
-              className="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base outline-1 -outline-offset-1 outline-gray-700 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-orange-700 sm:w-64 sm:text-base/6 xl:w-full"
-            />
-            <div className="mt-4 sm:mt-0 sm:ml-4 sm:shrink-0">
+        <div className="h-full flex flex-col w-[400px] p-6 bg-white border-r border-gray-200 overflow-auto gap-6">
+          {/* Search Form */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Search className="w-5 h-5 text-blue-500" />
+              Search Recipes
+            </h3>
+            <form
+              className="space-y-3"
+              onSubmit={(e) => handleNameSearchSubmit(e)}
+            >
+              <input
+                id="name-search"
+                name="name-search"
+                type="text"
+                required
+                placeholder="Search recipe by name..."
+                value={nameSearchValue}
+                onChange={(e) => setNameSearchValue(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
               <button
                 type="submit"
-                className="flex w-full items-center justify-center rounded-md cursor-pointer bg-orange-800 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-800"
+                className="w-full rounded-xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
               >
                 Search Recipe
               </button>
-            </div>
-          </form>
+            </form>
+          </div>
 
-          {/* Filter by category */}
-          <FilterSection
-            name="category"
-            filters={[...categories]}
-            selectedFilters={selectedCategories}
-            setSelectedFilters={setSelectedCategories}
-          />
+          {/* Filters */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+            
+            {/* Filter by category */}
+            <FilterSection
+              name="category"
+              filters={[...categories]}
+              selectedFilters={selectedCategories}
+              setSelectedFilters={setSelectedCategories}
+            />
 
-          {/* Filter by area */}
-          <FilterSection
-            name="area"
-            filters={[...areas]}
-            selectedFilters={selectedAreas}
-            setSelectedFilters={setSelectedAreas}
-          />
+            {/* Filter by area */}
+            <FilterSection
+              name="area"
+              filters={[...areas]}
+              selectedFilters={selectedAreas}
+              setSelectedFilters={setSelectedAreas}
+            />
 
-          <div className="w-full flex justify-center">
             <button
-              className="cursor-pointer text-center rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700"
+              className="w-full rounded-xl bg-green-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
               onClick={applyFilters}
             >
               Apply Filters
             </button>
           </div>
         </div>
-        {/* Search Section */}
-        <div className="w-[75%] flex flex-col px-12 py-8 overflow-auto">
-          {/* Grid of recipes */}
-          <div
-            role="list"
-            className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-3 lg:mx-0 lg:max-w-none lg:gap-x-8 xl:col-span-2"
-          >
-            {recipes.length != 0
-              ? recipes.map((recipe) => {
-                return (
-                  <RecipeCard recipe={recipe} userRecipes={userRecipes} />
-                );
-              })
-              : !isLoading && <p>No recipes found</p>}
-          </div>
-          {/* Load more button */}
-          <div className="w-full flex justify-center mt-5">
-            <button
-              onClick={getRecipes}
-              className="cursor-pointer text-center rounded-md bg-orange-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700"
-            >
-              {isLoading ? "Loading..." : "Load Random Recipes"}
-            </button>
+
+        {/* Search Results Section */}
+        <div className="flex-1 p-8 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Recipe Search</h2>
+              <p className="text-gray-600">Discover delicious recipes from around the world</p>
+            </div>
+
+            {/* Results Grid */}
+            {recipes.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {recipes.map((recipe) => (
+                  <RecipeCard key={recipe.id} recipe={recipe} userRecipes={userRecipes} />
+                ))}
+              </div>
+            ) : !isLoading ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No recipes found</h3>
+                <p className="text-gray-600">Try adjusting your search criteria or filters</p>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <p className="text-gray-600">Loading recipes...</p>
+              </div>
+            )}
+
+            {/* Load More Button */}
+            {recipes.length > 0 && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={getRecipes}
+                  disabled={isLoading}
+                  className="rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Loading..." : "Load Random Recipes"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
