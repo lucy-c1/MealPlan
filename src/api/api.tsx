@@ -85,20 +85,28 @@ export async function getRecipesByName(name: string): Promise<Recipe[]> {
   );
   const data = await res.json();
   const recipes: RawRecipe[] = data.meals;
-  return recipes?.map((recipe: RawRecipe) : Recipe => {
-    return rawRecipeDataToRecipe(recipe)
-  })?? [];
+  return (
+    recipes?.map((recipe: RawRecipe): Recipe => {
+      return rawRecipeDataToRecipe(recipe);
+    }) ?? []
+  );
 }
 
-export async function getRecipesByCategories(categories: string[]): Promise<Recipe[]> {
+export async function getRecipesByCategories(
+  categories: string[]
+): Promise<Recipe[]> {
   const results = await Promise.all(
     categories.map(async (category) => {
       const res = await fetch(
-        `http://localhost:5000/api/search-category-details?q=${encodeURIComponent(category)}`
+        `http://localhost:5000/api/search-category-details?q=${encodeURIComponent(
+          category
+        )}`
       );
       const data = await res.json();
       const rawRecipes: RawRecipe[] = data.meals || [];
-      return rawRecipes.map((recipe : RawRecipe) => rawRecipeDataToRecipe(recipe));
+      return rawRecipes.map((recipe: RawRecipe) =>
+        rawRecipeDataToRecipe(recipe)
+      );
     })
   );
 
@@ -110,11 +118,15 @@ export async function getRecipesByAreas(areas: string[]): Promise<Recipe[]> {
   const results = await Promise.all(
     areas.map(async (area) => {
       const res = await fetch(
-        `http://localhost:5000/api/search-area-details?q=${encodeURIComponent(area)}`
+        `http://localhost:5000/api/search-area-details?q=${encodeURIComponent(
+          area
+        )}`
       );
       const data = await res.json();
       const rawRecipes: RawRecipe[] = data.meals || [];
-      return rawRecipes.map((recipe : RawRecipe) => rawRecipeDataToRecipe(recipe));
+      return rawRecipes.map((recipe: RawRecipe) =>
+        rawRecipeDataToRecipe(recipe)
+      );
     })
   );
 
@@ -136,7 +148,7 @@ export async function getRecipesByCategoryAndArea(
   if (areas.length === 0) {
     return await getRecipesByCategories(categories);
   }
-  
+
   // Step 1: Fetch recipes by category and area in parallel
   const [categoryRecipes, areaRecipes] = await Promise.all([
     getRecipesByCategories(categories),

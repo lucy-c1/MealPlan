@@ -6,6 +6,7 @@ import MealPlan from "./pages/MealPlan";
 import RecipeSearch from "./pages/RecipeSearch";
 import Login from "./pages/login";
 import { AuthProvider } from "./AuthContext";
+import SavedRecipes from "./pages/savedRecipes";
 
 const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
   {
     path: "/plan",
     element: <MealPlan />,
+  },
+  {
+    path: "/saved",
+    element: <SavedRecipes />,
   },
 ]);
 
