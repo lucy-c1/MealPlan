@@ -1,4 +1,4 @@
-import { Bookmark, Calendar, User } from "lucide-react";
+import { Bookmark, Calendar, User, Search, ChefHat } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
@@ -16,21 +16,26 @@ export default function Header({ activePage }: HeaderProps) {
   console.log(user);
 
   return (
-    <div className="flex justify-between items-center px-8 py-4 border-b-2 border-orange-800">
+    <div className="flex justify-between items-center px-8 py-6 bg-white border-b border-gray-200">
       {/* Logo */}
-      <div className="flex items-center gap-1">
-        <p className="font-medium text-base">MealPlan</p>
-        <Calendar className="w-5 h-5" />
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+          <ChefHat className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <p className="font-bold text-xl text-gray-900">MealPlan</p>
+          <p className="text-xs text-gray-500">Delicious recipes, planned perfectly</p>
+        </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex text-base font-medium">
-        <div
+      <div className="flex bg-gray-100 rounded-xl p-1">
+        <button
           className={cn(
-            "border-r-2 border-black px-4 py-2",
+            "flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200",
             activePage === "search"
-              ? "rounded-l bg-orange-700 text-white cursor-default"
-              : "cursor-pointer hover:bg-neutral-100 rounded-l"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
           )}
           onClick={() => {
             if (activePage !== "search") {
@@ -38,15 +43,16 @@ export default function Header({ activePage }: HeaderProps) {
             }
           }}
         >
+          <Search className="w-4 h-4" />
           Recipe Search
-        </div>
+        </button>
 
-        <div
+        <button
           className={cn(
-            "px-4 py-2",
+            "flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200",
             activePage === "plan"
-              ? "cursor-default rounded-r bg-orange-700 text-white"
-              : "cursor-pointer hover:bg-neutral-100 rounded-r"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
           )}
           onClick={() => {
             if (activePage !== "plan") {
@@ -54,19 +60,20 @@ export default function Header({ activePage }: HeaderProps) {
             }
           }}
         >
+          <Calendar className="w-4 h-4" />
           Meal Planner
-        </div>
+        </button>
       </div>
 
-      {/* Saved Recipes Button */}
+      {/* User Section */}
       <div className="flex items-center gap-4">
         {user && (
           <button
             className={cn(
-              "flex items-center gap-1 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-700",
+              "flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200",
               activePage === "saved"
-                ? "bg-orange-700 text-white cursor-default"
-                : "bg-white text-black hover:bg-neutral-100 cursor-pointer"
+                ? "bg-green-500 text-white shadow-sm"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             )}
             onClick={() => {
               if (activePage !== "saved") {
@@ -76,22 +83,27 @@ export default function Header({ activePage }: HeaderProps) {
             aria-label="Saved Recipes"
             type="button"
           >
-            <Bookmark className="w-5 h-5" />
+            <Bookmark className="w-4 h-4" />
             <span>Saved Recipes</span>
           </button>
         )}
 
         {/* Profile Avatar */}
         <Tooltip>
-          <TooltipTrigger>
-            <Avatar>
-              <AvatarFallback>
-                <User className="w-6 h-6 text-gray-400" />
-              </AvatarFallback>
-            </Avatar>
+          <TooltipTrigger asChild>
+            <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
+              <Avatar className="w-8 h-8">
+                <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-semibold">
+                  {user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                {user?.email?.split('@')[0] || 'User'}
+              </span>
+            </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{user?.email}</p>
+            <p className="text-sm">{user?.email}</p>
           </TooltipContent>
         </Tooltip>
       </div>
