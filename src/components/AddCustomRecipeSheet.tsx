@@ -31,8 +31,10 @@ import { Plus, Trash2, Save, ChefHat } from "lucide-react";
 
 export function AddCustomRecipeSheet({
   onSave,
+  trigger,
 }: {
   onSave: (recipe: Recipe) => void;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -129,10 +131,12 @@ export function AddCustomRecipeSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button className="flex items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2">
-          <Plus className="w-4 h-4" />
-          Add Custom Recipe
-        </Button>
+        {trigger || (
+          <Button className="flex items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2">
+            <Plus className="w-4 h-4" />
+            Add Custom Recipe
+          </Button>
+        )}
       </SheetTrigger>
       <SheetContent className="w-[600px] !max-w-none p-0">
         <div className="h-full flex flex-col">

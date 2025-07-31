@@ -1,4 +1,4 @@
-import { Bookmark, Calendar, User, Search, ChefHat } from "lucide-react";
+import { Bookmark, Calendar, User, Search, ChefHat, Plus } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
@@ -91,34 +91,46 @@ export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
           <Calendar className="w-4 h-4" />
           Meal Planner
         </button>
+
+        <button
+          className={cn(
+            "flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200",
+            activePage === "saved"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+          )}
+          onClick={() => {
+            if (activePage !== "saved") {
+              navigate("/saved");
+            }
+          }}
+        >
+          <Bookmark className="w-4 h-4" />
+          Saved Recipes
+        </button>
       </div>
 
       {/* User Section */}
-      <div className="flex items-center gap-4">
-        {/* Add Custom Recipe Button - Always show when user is logged in */}
+      <div className="flex items-center gap-3">
+        {/* Add Custom Recipe Button - Subtle design */}
         {user && (
-          <AddCustomRecipeSheet onSave={handleSaveRecipe} />
-        )}
-
-        {user && (
-          <button
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200",
-              activePage === "saved"
-                ? "bg-green-500 text-white shadow-sm"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            )}
-            onClick={() => {
-              if (activePage !== "saved") {
-                navigate("/saved");
-              }
-            }}
-            aria-label="Saved Recipes"
-            type="button"
-          >
-            <Bookmark className="w-4 h-4" />
-            <span>Saved Recipes</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <AddCustomRecipeSheet 
+                  onSave={handleSaveRecipe}
+                  trigger={
+                    <button className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-sm hover:shadow-md">
+                      <Plus className="w-5 h-5 text-white" />
+                    </button>
+                  }
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-sm">Add Custom Recipe</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* Profile Avatar */}
