@@ -4,8 +4,8 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react";
-import { X, Plus, Trash2, Edit3, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { X, Plus, Trash2, Edit3, Save, Upload, Image as ImageIcon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { areas, categories, type Recipe } from "../types/type";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
@@ -36,13 +36,37 @@ export default function RecipeEditPopup({
   onSave: (updated: Recipe) => void;
 }) {
   const [editedRecipe, setEditedRecipe] = useState<Recipe>(recipe);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setEditedRecipe(recipe);
+    setUploadedImage(null);
   }, [recipe]);
 
   const handleChange = <K extends keyof Recipe>(field: K, value: Recipe[K]) => {
     setEditedRecipe((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setUploadedImage(result);
+        handleChange("imageUrl", result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setUploadedImage(null);
+    handleChange("imageUrl", "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleIngredientChange = (
@@ -81,6 +105,8 @@ export default function RecipeEditPopup({
     handleChange("tags", newTags);
   };
 
+  const currentImageUrl = uploadedImage || editedRecipe.imageUrl;
+
   return (
     <Dialog open={open} onClose={setOpen} className="relative z-10">
       <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
@@ -116,17 +142,83 @@ export default function RecipeEditPopup({
                 />
               </div>
 
-              {/* Image/Video */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700">Recipe Image/Video</label>
-                {editedRecipe.youtubeUrl ? (
-                  <YouTubeEmbed videoUrl={editedRecipe.youtubeUrl} />
-                ) : (
-                  <img
-                    alt=""
-                    src={editedRecipe.imageUrl}
-                    className="aspect-4/3 w-full rounded-2xl object-cover shadow-lg"
+              {/* Image/Video Section */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-purple-500 rounded-full"></span>
+                  📸 Recipe Image
+                </h4>
+                
+                {/* YouTube URL Input */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">YouTube URL (optional)</label>
+                  <input
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    value={editedRecipe.youtubeUrl || ""}
+                    onChange={(e) => handleChange("youtubeUrl", e.target.value)}
+                    placeholder="Enter YouTube URL..."
                   />
+                </div>
+
+                {/* Image Display/Upload */}
+                {editedRecipe.youtubeUrl ? (
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700">Video Preview</label>
+                    <YouTubeEmbed videoUrl={editedRecipe.youtubeUrl} />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700">Recipe Image</label>
+                    
+                    {currentImageUrl ? (
+                      <div className="relative group">
+                        <img
+                          alt="Recipe"
+                          src={currentImageUrl}
+                          className="aspect-4/3 w-full rounded-2xl object-cover shadow-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl flex items-center justify-center">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                            >
+                              <Upload className="w-4 h-4" />
+                              Replace
+                            </button>
+                            <button
+                              onClick={handleRemoveImage}
+                              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-4/3 w-full border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                           onClick={() => fileInputRef.current?.click()}>
+                        <ImageIcon className="w-12 h-12 text-gray-400 mb-3" />
+                        <p className="text-gray-600 font-medium mb-1">Upload Recipe Image</p>
+                        <p className="text-sm text-gray-500">Click to select an image</p>
+                      </div>
+                    )}
+                    
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    
+                    {!currentImageUrl && (
+                      <p className="text-xs text-gray-500">
+                        Supported formats: JPG, PNG, GIF. Max size: 5MB
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
