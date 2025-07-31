@@ -12,7 +12,15 @@ import {
   getPaginationRowModel,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { Search, Bookmark, Plus, MapPin, Tag, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Bookmark,
+  Plus,
+  MapPin,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import RecipeEditPopup from "@/components/RecipeEditPopup";
 import { toast } from "react-toastify";
@@ -131,8 +139,10 @@ export default function SavedRecipes() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 8,
+  });
 
   useEffect(() => {
     if (user?.uid) {
@@ -176,20 +186,21 @@ export default function SavedRecipes() {
   ];
 
   const table = useReactTable({
-    data: data,
+    data,
     columns,
     state: {
       globalFilter,
       columnFilters,
+      pagination, // ✅ add this
     },
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
-    globalFilterFn: "includesString",
+    onPaginationChange: setPagination, // ✅ keep in sync
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: getPaginationRowModel(), // ✅ enable built-in pagination
   });
+
+  const currentPageRows = table.getRowModel().rows;
 
   async function handleSaveRecipe(recipe: Recipe) {
     // Update local recipes list:
@@ -205,39 +216,6 @@ export default function SavedRecipes() {
     });
   }
 
-  // Pagination logic
-  const filteredRows = table.getRowModel().rows;
-  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPageRows = filteredRows.slice(startIndex, endIndex);
-
-  // Debug logging
-  console.log('Pagination Debug:', {
-    totalRecipes: userRecipes.length,
-    filteredRows: filteredRows.length,
-    totalPages,
-    currentPage,
-    itemsPerPage,
-    startIndex,
-    endIndex,
-    currentPageRows: currentPageRows.length
-  });
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [globalFilter, columnFilters]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // Scroll to top of content area
-    const contentArea = document.querySelector('.content-area');
-    if (contentArea) {
-      contentArea.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
       <Header activePage="saved" onSaveRecipe={handleSaveRecipe} />
@@ -248,7 +226,9 @@ export default function SavedRecipes() {
           {/* Header */}
           <div className="space-y-4">
             <h1 className="text-2xl font-bold text-gray-900">Saved Recipes</h1>
-            <p className="text-gray-600">Your personal collection of favorite recipes</p>
+            <p className="text-gray-600">
+              Your personal collection of favorite recipes
+            </p>
           </div>
 
           {/* Search Bar */}
@@ -276,7 +256,7 @@ export default function SavedRecipes() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {currentPageRows.map((row) => (
-                    <div 
+                    <div
                       key={row.original.name}
                       className="group relative bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
                       onClick={() => {
@@ -296,12 +276,14 @@ export default function SavedRecipes() {
                           src={row.original.imageUrl}
                           className="aspect-4/3 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                        
+
                         {/* Recipe info overlay at bottom */}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                           <div className="flex items-center gap-2 text-white text-xs">
                             <MapPin className="w-3 h-3" />
-                            <span className="font-medium">{row.original.area}</span>
+                            <span className="font-medium">
+                              {row.original.area}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -311,31 +293,36 @@ export default function SavedRecipes() {
                         <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-2">
                           {row.original.name}
                         </h3>
-                        
+
                         {/* Category */}
                         <div className="flex items-center gap-2">
                           <Tag className="w-4 h-4 text-purple-500" />
-                          <span className="text-sm text-gray-600 font-medium">{row.original.category}</span>
+                          <span className="text-sm text-gray-600 font-medium">
+                            {row.original.category}
+                          </span>
                         </div>
 
                         {/* Tags */}
-                        {row.original.ingredients && row.original.ingredients.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {row.original.ingredients.slice(0, 3).map((ingredient, index) => (
-                              <span
-                                key={index}
-                                className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-1 font-medium"
-                              >
-                                {ingredient.name}
-                              </span>
-                            ))}
-                            {row.original.ingredients.length > 3 && (
-                              <span className="text-xs text-gray-500 px-2 py-1">
-                                +{row.original.ingredients.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        {row.original.ingredients &&
+                          row.original.ingredients.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {row.original.ingredients
+                                .slice(0, 3)
+                                .map((ingredient, index) => (
+                                  <span
+                                    key={index}
+                                    className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-1 font-medium"
+                                  >
+                                    {ingredient.name}
+                                  </span>
+                                ))}
+                              {row.original.ingredients.length > 3 && (
+                                <span className="text-xs text-gray-500 px-2 py-1">
+                                  +{row.original.ingredients.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          )}
                       </div>
                     </div>
                   ))}
@@ -343,9 +330,14 @@ export default function SavedRecipes() {
 
                 {/* Pagination - Always show when there are recipes */}
                 <CustomPagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
+                  currentPage={pagination.pageIndex + 1} // 1-based index for UI
+                  totalPages={table.getPageCount()}
+                  onPageChange={(newPage) => {
+                    setPagination((prev) => ({
+                      ...prev,
+                      pageIndex: newPage - 1, // convert back to 0-based
+                    }));
+                  }}
                 />
               </>
             ) : (
@@ -353,8 +345,13 @@ export default function SavedRecipes() {
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Bookmark className="w-10 h-10 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No saved recipes yet</h3>
-                <p className="text-gray-600 mb-6">Start building your recipe collection by saving your favorite recipes</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No saved recipes yet
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Start building your recipe collection by saving your favorite
+                  recipes
+                </p>
               </div>
             )}
           </div>
@@ -375,9 +372,7 @@ export default function SavedRecipes() {
               }
 
               if (!user || !user.uid) {
-                console.error(
-                  "User is not logged in. Cannot update recipe."
-                );
+                console.error("User is not logged in. Cannot update recipe.");
                 toast.error("Please log in first");
                 return;
               }

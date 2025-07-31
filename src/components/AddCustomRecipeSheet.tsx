@@ -6,7 +6,7 @@ import {
   type Recipe,
   type RecipeIngredient,
 } from "@/types/type";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Sheet,
   SheetClose,
@@ -27,7 +27,7 @@ import {
 } from "./ui/select";
 import { Textarea } from "./ui/textarea";
 import { toast } from "react-toastify";
-import { Plus, Trash2, Save, ChefHat } from "lucide-react";
+import { Plus, Trash2, Save, ChefHat, Upload, Image as ImageIcon } from "lucide-react";
 
 export function AddCustomRecipeSheet({
   onSave,
@@ -37,6 +37,8 @@ export function AddCustomRecipeSheet({
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [recipe, setRecipe] = useState<
     Omit<Recipe, "id" | "tags" | "ingredients">
@@ -60,6 +62,28 @@ export function AddCustomRecipeSheet({
     value: (typeof recipe)[K]
   ) => {
     setRecipe((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Image upload handlers
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setUploadedImage(result);
+        handleChange("imageUrl", result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setUploadedImage(null);
+    handleChange("imageUrl", "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   // Ingredient handlers
@@ -126,7 +150,10 @@ export function AddCustomRecipeSheet({
     });
     setIngredients([{ name: "", amount: "" }]);
     setTags([]);
+    setUploadedImage(null);
   };
+
+  const currentImageUrl = uploadedImage || recipe.imageUrl;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -304,22 +331,14 @@ export function AddCustomRecipeSheet({
               />
             </div>
 
-            {/* Media URLs */}
+            {/* Media */}
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <span className="w-1 h-6 bg-purple-500 rounded-full"></span>
-                Media
+                📸 Media
               </h4>
               <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">Image URL</label>
-                  <Input
-                    placeholder="Enter image URL..."
-                    value={recipe.imageUrl}
-                    onChange={(e) => handleChange("imageUrl", e.target.value)}
-                    className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
+                {/* YouTube URL Input */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">YouTube URL (optional)</label>
                   <Input
@@ -329,6 +348,76 @@ export function AddCustomRecipeSheet({
                     className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
+
+                {/* Image Display/Upload */}
+                {recipe.youtubeUrl ? (
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700">Video Preview</label>
+                    <div className="aspect-video w-full">
+                      <iframe
+                        className="w-full h-full rounded-2xl shadow-lg"
+                        src={recipe.youtubeUrl.replace("watch?v=", "embed/")}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700">Recipe Image</label>
+                    
+                    {currentImageUrl ? (
+                      <div className="relative group">
+                        <img
+                          alt="Recipe"
+                          src={currentImageUrl}
+                          className="aspect-4/3 w-full rounded-2xl object-cover shadow-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl flex items-center justify-center">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                            >
+                              <Upload className="w-4 h-4" />
+                              Replace
+                            </button>
+                            <button
+                              onClick={handleRemoveImage}
+                              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-4/3 w-full border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                           onClick={() => fileInputRef.current?.click()}>
+                        <ImageIcon className="w-12 h-12 text-gray-400 mb-3" />
+                        <p className="text-gray-600 font-medium mb-1">Upload Recipe Image</p>
+                        <p className="text-sm text-gray-500">Click to select an image</p>
+                      </div>
+                    )}
+                    
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    
+                    {!currentImageUrl && (
+                      <p className="text-xs text-gray-500">
+                        Supported formats: JPG, PNG, GIF. Max size: 5MB
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
