@@ -5,12 +5,15 @@ import { useAuth } from "../AuthContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Tooltip, TooltipContent } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
+import { AddCustomRecipeSheet } from "./AddCustomRecipeSheet";
+import type { Recipe } from "@/types/type";
 
 export type HeaderProps = {
   activePage: "search" | "plan" | "saved";
+  onSaveRecipe?: (recipe: Recipe) => void;
 };
 
-export default function Header({ activePage }: HeaderProps) {
+export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   console.log(user);
@@ -67,6 +70,11 @@ export default function Header({ activePage }: HeaderProps) {
 
       {/* User Section */}
       <div className="flex items-center gap-4">
+        {/* Add Custom Recipe Button */}
+        {user && onSaveRecipe && (
+          <AddCustomRecipeSheet onSave={onSaveRecipe} />
+        )}
+
         {user && (
           <button
             className={cn(

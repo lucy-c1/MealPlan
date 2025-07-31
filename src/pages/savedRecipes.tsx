@@ -16,7 +16,6 @@ import { Search, Bookmark, Plus, MapPin, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import RecipeEditPopup from "@/components/RecipeEditPopup";
 import { toast } from "react-toastify";
-import { AddCustomRecipeSheet } from "@/components/AddCustomRecipeSheet";
 
 type RecipeCardItem = {
   id: string;
@@ -135,7 +134,7 @@ export default function SavedRecipes() {
 
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
-      <Header activePage="saved" />
+      <Header activePage="saved" onSaveRecipe={handleSaveRecipe} />
 
       <div className="flex w-full flex-1 min-h-0">
         {/* Sidebar */}
@@ -161,12 +160,6 @@ export default function SavedRecipes() {
                 className="w-full pl-10 pr-4 py-3 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
-          </div>
-
-          {/* Add Recipe */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Add Recipe</h3>
-            <AddCustomRecipeSheet onSave={handleSaveRecipe} />
           </div>
         </div>
 
@@ -247,7 +240,6 @@ export default function SavedRecipes() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No saved recipes yet</h3>
                 <p className="text-gray-600 mb-6">Start building your recipe collection by saving your favorite recipes</p>
-                <AddCustomRecipeSheet onSave={handleSaveRecipe} />
               </div>
             )}
           </div>
