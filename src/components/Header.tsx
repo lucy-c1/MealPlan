@@ -7,6 +7,8 @@ import { Tooltip, TooltipContent } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { AddCustomRecipeSheet } from "./AddCustomRecipeSheet";
 import type { Recipe } from "@/types/type";
+import { addRecipe } from "@/RecipeDB/recipeDB";
+import { toast } from "react-toastify";
 
 export type HeaderProps = {
   activePage: "search" | "plan" | "saved";
@@ -17,6 +19,29 @@ export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   console.log(user);
+
+  const handleSaveRecipe = async (recipe: Recipe) => {
+    try {
+      if (!user || !user.uid) {
+        console.error("User not logged in. Cannot save recipe.");
+        toast.error("Please log in to save your recipe.");
+        return;
+      }
+
+      await addRecipe(user.uid, recipe);
+
+      console.log("Recipe saved successfully!");
+      toast.success("Recipe saved!");
+
+      // If a custom onSaveRecipe handler is provided, call it as well
+      if (onSaveRecipe) {
+        onSaveRecipe(recipe);
+      }
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      toast.error("Error saving recipe");
+    }
+  };
 
   return (
     <div className="flex justify-between items-center px-8 py-6 bg-white border-b border-gray-200">
@@ -70,9 +95,9 @@ export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
 
       {/* User Section */}
       <div className="flex items-center gap-4">
-        {/* Add Custom Recipe Button */}
-        {user && onSaveRecipe && (
-          <AddCustomRecipeSheet onSave={onSaveRecipe} />
+        {/* Add Custom Recipe Button - Always show when user is logged in */}
+        {user && (
+          <AddCustomRecipeSheet onSave={handleSaveRecipe} />
         )}
 
         {user && (

@@ -103,33 +103,17 @@ export default function SavedRecipes() {
   });
 
   async function handleSaveRecipe(recipe: Recipe) {
-    try {
-      if (!user || !user.uid) {
-        console.error("User not logged in. Cannot save recipe.");
-        toast.error("Please log in to save your recipe.");
-        return;
+    // Update local recipes list:
+    setUserRecipes((prev) => {
+      const exists = prev.find((r) => r.id === recipe.id);
+      if (exists) {
+        // Update existing recipe
+        return prev.map((r) => (r.id === recipe.id ? recipe : r));
+      } else {
+        // Add new recipe
+        return [...prev, recipe];
       }
-
-      await addRecipe(user.uid, recipe);
-
-      // Update local recipes list:
-      setUserRecipes((prev) => {
-        const exists = prev.find((r) => r.id === recipe.id);
-        if (exists) {
-          // Update existing recipe
-          return prev.map((r) => (r.id === recipe.id ? recipe : r));
-        } else {
-          // Add new recipe
-          return [...prev, recipe];
-        }
-      });
-
-      console.log("Recipe saved successfully!");
-      toast.success("Recipe saved!");
-    } catch (error) {
-      console.error("Error saving recipe:", error);
-      toast.error("Error saving recipe");
-    }
+    });
   }
 
   return (

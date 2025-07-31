@@ -91,6 +91,15 @@ export default function MealPlan() {
     }
   }
 
+  // Handle new recipe being saved
+  async function handleSaveRecipe(recipe: Recipe) {
+    // Refresh the user recipes list
+    if (user) {
+      const saved = await getUserRecipes(user.uid);
+      setUserRecipes(saved);
+    }
+  }
+
   // Load plan for selected date range
   useEffect(() => {
     if (user?.uid) {
@@ -425,7 +434,7 @@ export default function MealPlan() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <Header activePage="plan" />
+      <Header activePage="plan" onSaveRecipe={handleSaveRecipe} />
       <DndProvider backend={HTML5Backend}>
         <div className="flex flex-1 gap-6 p-6">
           {/* Left column: user recipes */}

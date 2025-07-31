@@ -123,6 +123,15 @@ export default function RecipeSearch() {
     setIsLoading(false);
   }
 
+  // Handle new recipe being saved
+  async function handleSaveRecipe(recipe: Recipe) {
+    // Refresh the user recipes list
+    if (user) {
+      const saved = await getUserRecipes(user.uid);
+      setUserRecipes(saved);
+    }
+  }
+
   console.log(recipes);
 
   // get 6 random recipes
@@ -154,7 +163,7 @@ export default function RecipeSearch() {
 
   return (
     <div className="w-full h-screen flex flex-col bg-gray-50">
-      <Header activePage="search" />
+      <Header activePage="search" onSaveRecipe={handleSaveRecipe} />
 
       <div className="flex w-full flex-1 min-h-0">
         {/* Filters section */}
