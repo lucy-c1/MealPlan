@@ -12,7 +12,7 @@ import {
   getPaginationRowModel,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { Search, Bookmark, Plus, MapPin, Tag } from "lucide-react";
+import { Search, Bookmark, Plus, MapPin, Tag, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import RecipeEditPopup from "@/components/RecipeEditPopup";
 import { toast } from "react-toastify";
@@ -37,6 +37,93 @@ function recipesToRecipeCardItems(recipes: Recipe[]): RecipeCardItem[] {
   }));
 }
 
+// Custom Pagination Component
+function CustomPagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const getVisiblePages = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...");
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages);
+    } else if (totalPages > 1) {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-8">
+      {/* Previous Button */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Previous
+      </button>
+
+      {/* Page Numbers */}
+      <div className="flex items-center gap-1">
+        {getVisiblePages().map((page, index) => (
+          <div key={index}>
+            {page === "..." ? (
+              <span className="px-3 py-2 text-gray-500">...</span>
+            ) : (
+              <button
+                onClick={() => onPageChange(page as number)}
+                className={`px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  currentPage === page
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {page}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Next Button */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+      >
+        Next
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 export default function SavedRecipes() {
   const { user } = useAuth();
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
@@ -44,6 +131,8 @@ export default function SavedRecipes() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [open, setOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     if (user?.uid) {
@@ -116,6 +205,39 @@ export default function SavedRecipes() {
     });
   }
 
+  // Pagination logic
+  const filteredRows = table.getRowModel().rows;
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPageRows = filteredRows.slice(startIndex, endIndex);
+
+  // Debug logging
+  console.log('Pagination Debug:', {
+    totalRecipes: userRecipes.length,
+    filteredRows: filteredRows.length,
+    totalPages,
+    currentPage,
+    itemsPerPage,
+    startIndex,
+    endIndex,
+    currentPageRows: currentPageRows.length
+  });
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [globalFilter, columnFilters]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of content area
+    const contentArea = document.querySelector('.content-area');
+    if (contentArea) {
+      contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
       <Header activePage="saved" onSaveRecipe={handleSaveRecipe} />
@@ -148,75 +270,84 @@ export default function SavedRecipes() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto content-area">
           <div className="max-w-7xl mx-auto p-8">
             {table.getRowModel().rows.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {table.getRowModel().rows.map((row) => (
-                  <div 
-                    key={row.original.name}
-                    className="group relative bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
-                    onClick={() => {
-                      const recipe = userRecipes.find(
-                        (r) => r.id == row.original.id
-                      );
-                      if (recipe) {
-                        setSelectedRecipe(recipe);
-                        setOpen(true);
-                      }
-                    }}
-                  >
-                    {/* Image Container */}
-                    <div className="relative">
-                      <img
-                        alt={row.original.name}
-                        src={row.original.imageUrl}
-                        className="aspect-4/3 w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      
-                      {/* Recipe info overlay at bottom */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                        <div className="flex items-center gap-2 text-white text-xs">
-                          <MapPin className="w-3 h-3" />
-                          <span className="font-medium">{row.original.area}</span>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {currentPageRows.map((row) => (
+                    <div 
+                      key={row.original.name}
+                      className="group relative bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
+                      onClick={() => {
+                        const recipe = userRecipes.find(
+                          (r) => r.id == row.original.id
+                        );
+                        if (recipe) {
+                          setSelectedRecipe(recipe);
+                          setOpen(true);
+                        }
+                      }}
+                    >
+                      {/* Image Container */}
+                      <div className="relative">
+                        <img
+                          alt={row.original.name}
+                          src={row.original.imageUrl}
+                          className="aspect-4/3 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        
+                        {/* Recipe info overlay at bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                          <div className="flex items-center gap-2 text-white text-xs">
+                            <MapPin className="w-3 h-3" />
+                            <span className="font-medium">{row.original.area}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Card Content */}
-                    <div className="p-4 space-y-3">
-                      <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-2">
-                        {row.original.name}
-                      </h3>
-                      
-                      {/* Category */}
-                      <div className="flex items-center gap-2">
-                        <Tag className="w-4 h-4 text-purple-500" />
-                        <span className="text-sm text-gray-600 font-medium">{row.original.category}</span>
-                      </div>
-
-                      {/* Tags */}
-                      {row.original.ingredients && row.original.ingredients.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {row.original.ingredients.slice(0, 3).map((ingredient, index) => (
-                            <span
-                              key={index}
-                              className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-1 font-medium"
-                            >
-                              {ingredient.name}
-                            </span>
-                          ))}
-                          {row.original.ingredients.length > 3 && (
-                            <span className="text-xs text-gray-500 px-2 py-1">
-                              +{row.original.ingredients.length - 3} more
-                            </span>
-                          )}
+                      {/* Card Content */}
+                      <div className="p-4 space-y-3">
+                        <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-2">
+                          {row.original.name}
+                        </h3>
+                        
+                        {/* Category */}
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-purple-500" />
+                          <span className="text-sm text-gray-600 font-medium">{row.original.category}</span>
                         </div>
-                      )}
+
+                        {/* Tags */}
+                        {row.original.ingredients && row.original.ingredients.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {row.original.ingredients.slice(0, 3).map((ingredient, index) => (
+                              <span
+                                key={index}
+                                className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-1 font-medium"
+                              >
+                                {ingredient.name}
+                              </span>
+                            ))}
+                            {row.original.ingredients.length > 3 && (
+                              <span className="text-xs text-gray-500 px-2 py-1">
+                                +{row.original.ingredients.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Pagination - Always show when there are recipes */}
+                <CustomPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </>
             ) : (
               <div className="text-center py-16">
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
