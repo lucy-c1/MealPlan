@@ -1,14 +1,17 @@
-import { Bookmark, Calendar, User, Search, ChefHat, Plus } from "lucide-react";
+import { Bookmark, Calendar, User, Search, ChefHat, Plus, LogOut } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Tooltip, TooltipContent } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { AddCustomRecipeSheet } from "./AddCustomRecipeSheet";
 import type { Recipe } from "@/types/type";
 import { addRecipe } from "@/RecipeDB/recipeDB";
 import { toast } from "react-toastify";
+import { auth } from "../firebase";
+import { signOut } from "firebase/auth";
 
 export type HeaderProps = {
   activePage: "search" | "plan" | "saved";
@@ -40,6 +43,17 @@ export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
     } catch (error) {
       console.error("Error saving recipe:", error);
       toast.error("Error saving recipe");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Signed out successfully!");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Error signing out");
     }
   };
 
@@ -133,9 +147,9 @@ export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
           </Tooltip>
         )}
 
-        {/* Profile Avatar */}
-        <Tooltip>
-          <TooltipTrigger asChild>
+        {/* Profile Avatar Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-semibold">
@@ -146,11 +160,21 @@ export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
                 {user?.email?.split('@')[0] || 'User'}
               </span>
             </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-sm">{user?.email}</p>
-          </TooltipContent>
-        </Tooltip>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.email?.split('@')[0] || 'User'}</p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
