@@ -8,21 +8,27 @@ import { toast } from "react-toastify";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useNavigate } from "react-router-dom";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Loader2 } from "lucide-react";
 
 export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       if (mode === "login") {
         await signInWithEmailAndPassword(auth, email, password);
         console.log("Logged in!");
-        toast.success("Logged in!");
-        navigate("/")
+        toast.success("Welcome back!");
+        navigate("/");
       } else {
         // Signup flow
         const userCredential = await createUserWithEmailAndPassword(
@@ -40,8 +46,8 @@ export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
         });
 
         console.log("Signed up and user saved!");
-        toast.success("Account created!");
-        navigate("/")
+        toast.success("Account created successfully!");
+        navigate("/");
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -51,45 +57,57 @@ export default function LoginForm({ mode }: { mode: "login" | "signup" }) {
         console.error("Unknown error", err);
         toast.error("An unknown error occurred");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
-      <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="text-sm font-medium text-gray-700">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-sm font-medium text-gray-700">
           Email
-        </label>
-        <input
+        </Label>
+        <Input
           type="email"
           id="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+          placeholder="Enter your email"
           required
+          disabled={isLoading}
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="password" className="text-sm font-medium text-gray-700">
+      <div className="space-y-2">
+        <Label htmlFor="password" className="text-sm font-medium text-gray-700">
           Password
-        </label>
-        <input
+        </Label>
+        <Input
           type="password"
           id="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+          placeholder="Enter your password"
           required
+          disabled={isLoading}
         />
       </div>
 
-      <button
+      <Button
         type="submit"
-        className="bg-orange-800 text-white py-2 rounded-lg font-semibold hover:bg-orange-700 transition duration-200"
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+        disabled={isLoading}
       >
-        {mode === "login" ? "Login" : "Sign Up"}
-      </button>
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            {mode === "login" ? "Signing in..." : "Creating account..."}
+          </>
+        ) : (
+          mode === "login" ? "Sign In" : "Create Account"
+        )}
+      </Button>
     </form>
   );
 }

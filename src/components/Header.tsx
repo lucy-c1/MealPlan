@@ -1,36 +1,83 @@
-import { Bookmark, Calendar, User } from "lucide-react";
+import { Bookmark, Calendar, User, Search, ChefHat, Plus, LogOut } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Tooltip, TooltipContent } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { AddCustomRecipeSheet } from "./AddCustomRecipeSheet";
+import type { Recipe } from "@/types/type";
+import { addRecipe } from "@/RecipeDB/recipeDB";
+import { toast } from "react-toastify";
+import { auth } from "../firebase";
+import { signOut } from "firebase/auth";
 
 export type HeaderProps = {
   activePage: "search" | "plan" | "saved";
+  onSaveRecipe?: (recipe: Recipe) => void;
 };
 
-export default function Header({ activePage }: HeaderProps) {
+export default function Header({ activePage, onSaveRecipe }: HeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   console.log(user);
 
+  const handleSaveRecipe = async (recipe: Recipe) => {
+    try {
+      if (!user || !user.uid) {
+        console.error("User not logged in. Cannot save recipe.");
+        toast.error("Please log in to save your recipe.");
+        return;
+      }
+
+      await addRecipe(user.uid, recipe);
+
+      console.log("Recipe saved successfully!");
+      toast.success("Recipe saved!");
+
+      // If a custom onSaveRecipe handler is provided, call it as well
+      if (onSaveRecipe) {
+        onSaveRecipe(recipe);
+      }
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      toast.error("Error saving recipe");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Signed out successfully!");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Error signing out");
+    }
+  };
+
   return (
-    <div className="flex justify-between items-center px-8 py-4 border-b-2 border-orange-800">
+    <div className="flex justify-between items-center px-8 py-6 bg-white border-b border-gray-200">
       {/* Logo */}
-      <div className="flex items-center gap-1">
-        <p className="font-medium text-base">MealPlan</p>
-        <Calendar className="w-5 h-5" />
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+          <ChefHat className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <p className="font-bold text-xl text-gray-900">MealPlan</p>
+          <p className="text-xs text-gray-500">Delicious recipes, planned perfectly</p>
+        </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex text-base font-medium">
-        <div
+      <div className="flex bg-gray-100 rounded-xl p-1">
+        <button
           className={cn(
-            "border-r-2 border-black px-4 py-2",
+            "flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200",
             activePage === "search"
-              ? "rounded-l bg-orange-700 text-white cursor-default"
-              : "cursor-pointer hover:bg-neutral-100 rounded-l"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
           )}
           onClick={() => {
             if (activePage !== "search") {
@@ -38,15 +85,16 @@ export default function Header({ activePage }: HeaderProps) {
             }
           }}
         >
+          <Search className="w-4 h-4" />
           Recipe Search
-        </div>
+        </button>
 
-        <div
+        <button
           className={cn(
-            "px-4 py-2",
+            "flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200",
             activePage === "plan"
-              ? "cursor-default rounded-r bg-orange-700 text-white"
-              : "cursor-pointer hover:bg-neutral-100 rounded-r"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
           )}
           onClick={() => {
             if (activePage !== "plan") {
@@ -54,46 +102,79 @@ export default function Header({ activePage }: HeaderProps) {
             }
           }}
         >
+          <Calendar className="w-4 h-4" />
           Meal Planner
-        </div>
+        </button>
+
+        <button
+          className={cn(
+            "flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200",
+            activePage === "saved"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+          )}
+          onClick={() => {
+            if (activePage !== "saved") {
+              navigate("/saved");
+            }
+          }}
+        >
+          <Bookmark className="w-4 h-4" />
+          Saved Recipes
+        </button>
       </div>
 
-      {/* Saved Recipes Button */}
-      <div className="flex items-center gap-4">
+      {/* User Section */}
+      <div className="flex items-center gap-3">
+        {/* Add Custom Recipe Button - Subtle design */}
         {user && (
-          <button
-            className={cn(
-              "flex items-center gap-1 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-700",
-              activePage === "saved"
-                ? "bg-orange-700 text-white cursor-default"
-                : "bg-white text-black hover:bg-neutral-100 cursor-pointer"
-            )}
-            onClick={() => {
-              if (activePage !== "saved") {
-                navigate("/saved");
-              }
-            }}
-            aria-label="Saved Recipes"
-            type="button"
-          >
-            <Bookmark className="w-5 h-5" />
-            <span>Saved Recipes</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <AddCustomRecipeSheet 
+                  onSave={handleSaveRecipe}
+                  trigger={
+                    <button className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-sm hover:shadow-md">
+                      <Plus className="w-5 h-5 text-white" />
+                    </button>
+                  }
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-sm">Add Custom Recipe</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
-        {/* Profile Avatar */}
-        <Tooltip>
-          <TooltipTrigger>
-            <Avatar>
-              <AvatarFallback>
-                <User className="w-6 h-6 text-gray-400" />
-              </AvatarFallback>
-            </Avatar>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{user?.email}</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Profile Avatar Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
+              <Avatar className="w-8 h-8">
+                <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-semibold">
+                  {user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                {user?.email?.split('@')[0] || 'User'}
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.email?.split('@')[0] || 'User'}</p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

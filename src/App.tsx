@@ -7,23 +7,41 @@ import RecipeSearch from "./pages/RecipeSearch";
 import Login from "./pages/login";
 import { AuthProvider } from "./AuthContext";
 import SavedRecipes from "./pages/savedRecipes";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <RecipeSearch />,
+    element: (
+      <ProtectedRoute>
+        <RecipeSearch />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/login",
-    element: <Login />,
+    element: (
+      <PublicRoute>
+        <Login />
+      </PublicRoute>
+    ),
   },
   {
     path: "/plan",
-    element: <MealPlan />,
+    element: (
+      <ProtectedRoute>
+        <MealPlan />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/saved",
-    element: <SavedRecipes />,
+    element: (
+      <ProtectedRoute>
+        <SavedRecipes />
+      </ProtectedRoute>
+    ),
   },
 ]);
 

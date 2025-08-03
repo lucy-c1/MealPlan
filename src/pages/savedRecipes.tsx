@@ -12,11 +12,18 @@ import {
   getPaginationRowModel,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { Search } from "lucide-react";
+import {
+  Search,
+  Bookmark,
+  Plus,
+  MapPin,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import RecipeEditPopup from "@/components/RecipeEditPopup";
 import { toast } from "react-toastify";
-import { AddCustomRecipeSheet } from "@/components/AddCustomRecipeSheet";
 
 type RecipeCardItem = {
   id: string;
@@ -38,6 +45,93 @@ function recipesToRecipeCardItems(recipes: Recipe[]): RecipeCardItem[] {
   }));
 }
 
+// Custom Pagination Component
+function CustomPagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const getVisiblePages = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...");
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages);
+    } else if (totalPages > 1) {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-8">
+      {/* Previous Button */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Previous
+      </button>
+
+      {/* Page Numbers */}
+      <div className="flex items-center gap-1">
+        {getVisiblePages().map((page, index) => (
+          <div key={index}>
+            {page === "..." ? (
+              <span className="px-3 py-2 text-gray-500">...</span>
+            ) : (
+              <button
+                onClick={() => onPageChange(page as number)}
+                className={`px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  currentPage === page
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {page}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Next Button */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+      >
+        Next
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 export default function SavedRecipes() {
   const { user } = useAuth();
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
@@ -45,6 +139,10 @@ export default function SavedRecipes() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [open, setOpen] = useState(false);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 8,
+  });
 
   useEffect(() => {
     if (user?.uid) {
@@ -88,145 +186,215 @@ export default function SavedRecipes() {
   ];
 
   const table = useReactTable({
-    data: data,
+    data,
     columns,
     state: {
       globalFilter,
       columnFilters,
+      pagination, // ✅ add this
     },
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
-    globalFilterFn: "includesString",
+    onPaginationChange: setPagination, // ✅ keep in sync
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: getPaginationRowModel(), // ✅ enable built-in pagination
   });
 
+  const currentPageRows = table.getRowModel().rows;
+
   async function handleSaveRecipe(recipe: Recipe) {
-    try {
-      if (!user || !user.uid) {
-        console.error("User not logged in. Cannot save recipe.");
-        toast.error("Please log in to save your recipe.");
-        return;
+    // Update local recipes list:
+    setUserRecipes((prev) => {
+      const exists = prev.find((r) => r.id === recipe.id);
+      if (exists) {
+        // Update existing recipe
+        return prev.map((r) => (r.id === recipe.id ? recipe : r));
+      } else {
+        // Add new recipe
+        return [...prev, recipe];
       }
-
-      await addRecipe(user.uid, recipe);
-
-      // Update local recipes list:
-      setUserRecipes((prev) => {
-        const exists = prev.find((r) => r.id === recipe.id);
-        if (exists) {
-          // Update existing recipe
-          return prev.map((r) => (r.id === recipe.id ? recipe : r));
-        } else {
-          // Add new recipe
-          return [...prev, recipe];
-        }
-      });
-
-      console.log("Recipe saved successfully!");
-      toast.success("Recipe saved!");
-    } catch (error) {
-      console.error("Error saving recipe:", error);
-      toast.error("Error saving recipe");
-    }
+    });
   }
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col">
-      <Header activePage="saved" />
+    <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
+      <Header activePage="saved" onSaveRecipe={handleSaveRecipe} />
 
-      {/* Filters and Search */}
-      <div className="flex justify-between items-center p-4 gap-2">
-        <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search your recipes..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-72"
-          />
-        </div>
-        {/* Add Custom Recipe Button */}
-        <AddCustomRecipeSheet onSave={handleSaveRecipe} />
-      </div>
+      <div className="flex w-full flex-1 min-h-0">
+        {/* Sidebar */}
+        <div className="h-full flex flex-col w-[400px] p-6 bg-white border-r border-gray-200 overflow-auto gap-6">
+          {/* Header */}
+          <div className="space-y-4">
+            <h1 className="text-2xl font-bold text-gray-900">Saved Recipes</h1>
+            <p className="text-gray-600">
+              Your personal collection of favorite recipes
+            </p>
+          </div>
 
-      {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
-        <div className="grid grid-cols-3 gap-x-8 gap-y-10 p-10">
-          {table.getRowModel().rows.map((row) => (
-            <div key={row.original.name}>
-              <img
-                alt=""
-                src={row.original.imageUrl}
-                className="aspect-3/2 w-full rounded-2xl object-cover"
+          {/* Search Bar */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Search className="w-5 h-5 text-blue-500" />
+              Search Recipes
+            </h3>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search your recipes..."
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
-              <h3
-                title="Click for more recipe info"
-                className="mt-6 text-lg/8 font-semibold text-gray-900 cursor-pointer inline-flex hover:text-gray-600"
-                onClick={() => {
-                  const recipe = userRecipes.find(
-                    (r) => r.id == row.original.id
-                  );
-                  if (recipe) {
-                    setSelectedRecipe(recipe); // set the clicked recipe
-                    setOpen(true); // open the popup
-                  }
-                }}
-              >
-                {row.original.name}
-              </h3>
-              <p className="text-base/7 text-gray-600">
-                Area: {row.original.area}
-              </p>
-              <p className="text-base/7 text-gray-600">
-                Category: {row.original.category}
-              </p>
             </div>
-          ))}
+          </div>
+        </div>
 
-          {selectedRecipe && (
-            <RecipeEditPopup
-              open={open}
-              setOpen={setOpen}
-              recipe={selectedRecipe}
-              onSave={async (updatedRecipe) => {
-                try {
-                  if (!updatedRecipe.id) {
-                    console.error("Missing recipe ID for update.");
-                    toast.error("Cannot find recipe");
-                    return;
-                  }
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto content-area">
+          <div className="max-w-7xl mx-auto p-8">
+            {table.getRowModel().rows.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {currentPageRows.map((row) => (
+                    <div
+                      key={row.original.name}
+                      className="group relative bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
+                      onClick={() => {
+                        const recipe = userRecipes.find(
+                          (r) => r.id == row.original.id
+                        );
+                        if (recipe) {
+                          setSelectedRecipe(recipe);
+                          setOpen(true);
+                        }
+                      }}
+                    >
+                      {/* Image Container */}
+                      <div className="relative">
+                        <img
+                          alt={row.original.name}
+                          src={row.original.imageUrl}
+                          className="aspect-4/3 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
 
-                  if (!user || !user.uid) {
-                    console.error(
-                      "User is not logged in. Cannot update recipe."
-                    );
-                    toast.error("Please log in first");
-                    return;
-                  }
+                        {/* Recipe info overlay at bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                          <div className="flex items-center gap-2 text-white text-xs">
+                            <MapPin className="w-3 h-3" />
+                            <span className="font-medium">
+                              {row.original.area}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-                  const userId = user.uid;
+                      {/* Card Content */}
+                      <div className="p-4 space-y-3">
+                        <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-2">
+                          {row.original.name}
+                        </h3>
 
-                  await updateRecipe(userId, updatedRecipe.id, updatedRecipe);
-                  // Update local userRecipes state:
-                  setUserRecipes((prevRecipes) =>
-                    prevRecipes.map((r) =>
-                      r.id === updatedRecipe.id ? updatedRecipe : r
-                    )
-                  );
+                        {/* Category */}
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-purple-500" />
+                          <span className="text-sm text-gray-600 font-medium">
+                            {row.original.category}
+                          </span>
+                        </div>
 
-                  toast.success("Recipe saved!");
-                } catch (error) {
-                  console.error("Error saving recipe:", error);
-                  toast.error("Error saving recipe");
-                }
-              }}
-            />
-          )}
+                        {/* Tags */}
+                        {row.original.ingredients &&
+                          row.original.ingredients.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {row.original.ingredients
+                                .slice(0, 3)
+                                .map((ingredient, index) => (
+                                  <span
+                                    key={index}
+                                    className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-1 font-medium"
+                                  >
+                                    {ingredient.name}
+                                  </span>
+                                ))}
+                              {row.original.ingredients.length > 3 && (
+                                <span className="text-xs text-gray-500 px-2 py-1">
+                                  +{row.original.ingredients.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination - Always show when there are recipes */}
+                <CustomPagination
+                  currentPage={pagination.pageIndex + 1} // 1-based index for UI
+                  totalPages={table.getPageCount()}
+                  onPageChange={(newPage) => {
+                    setPagination((prev) => ({
+                      ...prev,
+                      pageIndex: newPage - 1, // convert back to 0-based
+                    }));
+                  }}
+                />
+              </>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Bookmark className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No saved recipes yet
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Start building your recipe collection by saving your favorite
+                  recipes
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {selectedRecipe && (
+        <RecipeEditPopup
+          open={open}
+          setOpen={setOpen}
+          recipe={selectedRecipe}
+          onSave={async (updatedRecipe) => {
+            try {
+              if (!updatedRecipe.id) {
+                console.error("Missing recipe ID for update.");
+                toast.error("Cannot find recipe");
+                return;
+              }
+
+              if (!user || !user.uid) {
+                console.error("User is not logged in. Cannot update recipe.");
+                toast.error("Please log in first");
+                return;
+              }
+
+              const userId = user.uid;
+
+              await updateRecipe(userId, updatedRecipe.id, updatedRecipe);
+              // Update local userRecipes state:
+              setUserRecipes((prevRecipes) =>
+                prevRecipes.map((r) =>
+                  r.id === updatedRecipe.id ? updatedRecipe : r
+                )
+              );
+
+              toast.success("Recipe saved!");
+            } catch (error) {
+              console.error("Error saving recipe:", error);
+              toast.error("Error saving recipe");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

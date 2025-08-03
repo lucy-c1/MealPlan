@@ -1,15 +1,49 @@
 import { useAuth } from "@/AuthContext";
 import Header from "../components/Header";
 import { useEffect, useState } from "react";
-import type { Recipe, Plan, Day, Meal, MealType, DayOfWeek } from "@/types/type";
-import { getUserRecipes, savePlan, getUserPlans, updatePlan } from "@/RecipeDB/recipeDB";
+import type {
+  Recipe,
+  Plan,
+  Day,
+  Meal,
+  MealType,
+  DayOfWeek,
+  ShoppingListItem,
+} from "@/types/type";
+import {
+  getUserRecipes,
+  savePlan,
+  getUserPlans,
+  updatePlan,
+} from "@/RecipeDB/recipeDB";
 import { Timestamp } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Save, Loader2, X } from "lucide-react";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameWeek } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  CalendarIcon,
+  Save,
+  Loader2,
+  X,
+  ChefHat,
+  Clock,
+  CheckCircle,
+  ShoppingCart,
+} from "lucide-react";
+import RecipeDetailsPopup from "@/components/RecipeDetailsPopup";
+import ShoppingListPopup from "@/components/ShoppingListPopup";
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameWeek,
+} from "date-fns";
 import { cn } from "@/lib/utils";
 
 import { DndProvider, useDrag, useDrop } from "react-dnd";
@@ -31,6 +65,64 @@ type DragItem = {
   meal?: MealSlot;
 };
 
+function exportShoppingList(plan: Plan, recipes: Recipe[]): ShoppingListItem[] {
+  // Create a quick lookup for recipes by ID
+  const recipeMap = new Map(recipes.map((r) => [r.id, r]));
+
+  // Ingredient aggregation map
+  const ingredientMap = new Map<string, string[]>(); // name → amounts array
+
+  // 1. Loop through plan days/meals
+  for (const day of plan.days) {
+    for (const meal of day.meals) {
+      const recipe = recipeMap.get(meal.recipeId);
+      if (!recipe) continue;
+
+      // 2. Aggregate ingredients
+      for (const ing of recipe.ingredients) {
+        const nameKey = ing.name.trim().toLowerCase();
+        if (!ingredientMap.has(nameKey)) {
+          ingredientMap.set(nameKey, []);
+        }
+        ingredientMap.get(nameKey)!.push(ing.amount.trim());
+      }
+    }
+  }
+
+  // 3. Build final list
+  const shoppingList: ShoppingListItem[] = [];
+  let orderIndex = 0;
+  for (const [nameKey, amounts] of ingredientMap) {
+    const displayName = nameKey[0].toUpperCase() + nameKey.slice(1);
+    // Optionally, try to combine numeric amounts
+    const combined = combineAmounts(amounts);
+    shoppingList.push({ 
+      id: crypto.randomUUID(),
+      name: displayName, 
+      totalAmount: combined,
+      checked: false,
+      excluded: false,
+      order: orderIndex++
+    });
+  }
+
+  return shoppingList;
+}
+
+// Naive combining: if all amounts are numeric + same unit, sum them.
+// Otherwise, join them with " + "
+function combineAmounts(amounts: string[]): string {
+  // Simple regex to match number + optional unit
+  const parsed = amounts.map((a) => a.match(/^(\d+(?:\.\d+)?)\s*(.*)$/));
+  if (parsed.every((p) => p !== null && p[2] === parsed[0]![2])) {
+    // Same unit
+    const total = parsed.reduce((sum, p) => sum + parseFloat(p![1]), 0);
+    const unit = parsed[0]![2];
+    return `${total} ${unit}`.trim();
+  }
+  return amounts.join(" + ");
+}
+
 export default function MealPlan() {
   const { user } = useAuth();
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
@@ -45,6 +137,9 @@ export default function MealPlan() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
 
+  // Shopping list state
+  const [shoppingListOpen, setShoppingListOpen] = useState(false);
+
   useEffect(() => {
     if (user?.uid) {
       initialize();
@@ -55,9 +150,18 @@ export default function MealPlan() {
     if (user) {
       const saved = await getUserRecipes(user.uid);
       setUserRecipes(saved);
-      
+
       const plans = await getUserPlans(user.uid);
       setUserPlans(plans);
+    }
+  }
+
+  // Handle new recipe being saved
+  async function handleSaveRecipe(recipe: Recipe) {
+    // Refresh the user recipes list
+    if (user) {
+      const saved = await getUserRecipes(user.uid);
+      setUserRecipes(saved);
     }
   }
 
@@ -73,7 +177,7 @@ export default function MealPlan() {
     const weekEnd = endOfWeek(date, { weekStartsOn: 1 }); // Sunday
 
     // Find existing plan for this week
-    const existingPlan = userPlans.find(plan => {
+    const existingPlan = userPlans.find((plan) => {
       const planStart = plan.startDate.toDate();
       const planEnd = plan.endDate.toDate();
       return isSameWeek(planStart, weekStart, { weekStartsOn: 1 });
@@ -85,10 +189,14 @@ export default function MealPlan() {
       const recipes: PlacedRecipe[] = [];
       existingPlan.days.forEach((day, dayIndex) => {
         day.meals.forEach((meal) => {
-          const recipe = userRecipes.find(r => r.id === meal.recipeId);
+          const recipe = userRecipes.find((r) => r.id === meal.recipeId);
           if (recipe) {
-            const mealSlot: MealSlot = meal.category === "Breakfast" ? "breakfast" : 
-                                      meal.category === "Lunch" ? "lunch" : "dinner";
+            const mealSlot: MealSlot =
+              meal.category === "Breakfast"
+                ? "breakfast"
+                : meal.category === "Lunch"
+                ? "lunch"
+                : "dinner";
             recipes.push({
               recipe,
               dayIndex,
@@ -110,34 +218,46 @@ export default function MealPlan() {
     const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
     const dayNames: DayOfWeek[] = [
-      "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
     ];
 
-    const days: [Day, Day, Day, Day, Day, Day, Day] = dayNames.map((dayName, dayIndex) => {
-      const dayMeals: Meal[] = [];
-      
-      // Add meals for this day
-      meals.forEach((mealSlot) => {
-        const placedRecipe = placedRecipes.find(
-          (r) => r.dayIndex === dayIndex && r.meal === mealSlot
-        );
-        
-        if (placedRecipe) {
-          const mealType: MealType = mealSlot === "breakfast" ? "Breakfast" : 
-                                   mealSlot === "lunch" ? "Lunch" : "Dinner";
-          
-          dayMeals.push({
-            category: mealType,
-            recipeId: placedRecipe.recipe.id,
-          });
-        }
-      });
+    const days: [Day, Day, Day, Day, Day, Day, Day] = dayNames.map(
+      (dayName, dayIndex) => {
+        const dayMeals: Meal[] = [];
 
-      return {
-        dayOfWeek: dayName,
-        meals: dayMeals,
-      };
-    }) as [Day, Day, Day, Day, Day, Day, Day];
+        // Add meals for this day
+        meals.forEach((mealSlot) => {
+          const placedRecipe = placedRecipes.find(
+            (r) => r.dayIndex === dayIndex && r.meal === mealSlot
+          );
+
+          if (placedRecipe) {
+            const mealType: MealType =
+              mealSlot === "breakfast"
+                ? "Breakfast"
+                : mealSlot === "lunch"
+                ? "Lunch"
+                : "Dinner";
+
+            dayMeals.push({
+              category: mealType,
+              recipeId: placedRecipe.recipe.id,
+            });
+          }
+        });
+
+        return {
+          dayOfWeek: dayName,
+          meals: dayMeals,
+        };
+      }
+    ) as [Day, Day, Day, Day, Day, Day, Day];
 
     return {
       id: currentPlan?.id || crypto.randomUUID(),
@@ -162,7 +282,7 @@ export default function MealPlan() {
     setIsSaving(true);
     try {
       const plan = convertToPlan();
-      
+
       if (currentPlan) {
         // Update existing plan
         await updatePlan(user.uid, currentPlan.id, plan);
@@ -172,11 +292,10 @@ export default function MealPlan() {
         await savePlan(user.uid, plan);
         toast.success("Meal plan saved successfully!");
       }
-      
+
       // Refresh plans list
       const updatedPlans = await getUserPlans(user.uid);
       setUserPlans(updatedPlans);
-      
     } catch (error) {
       console.error("Failed to save meal plan:", error);
       toast.error("Failed to save meal plan. Please try again.");
@@ -185,9 +304,23 @@ export default function MealPlan() {
     }
   }
 
+  // Handle shopping list export
+  function handleExportShoppingList() {
+    if (placedRecipes.length === 0) {
+      toast.error("Please add some recipes to your meal plan before generating a shopping list.");
+      return;
+    }
+
+    setShoppingListOpen(true);
+  }
+
   // Drag source for recipes
   function RecipeCard({ recipe }: { recipe: Recipe }) {
-    const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
+    const [{ isDragging }, drag] = useDrag<
+      DragItem,
+      void,
+      { isDragging: boolean }
+    >(() => ({
       type: "RECIPE",
       item: { recipe },
       collect: (monitor) => ({
@@ -198,29 +331,51 @@ export default function MealPlan() {
     return (
       <div
         ref={drag as any}
-        className={`border rounded p-2 mb-2 cursor-move bg-white ${
+        className={`group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 cursor-move ${
           isDragging ? "opacity-50" : "opacity-100"
         }`}
       >
-        <img
-          src={recipe.imageUrl}
-          alt={recipe.name}
-          className="w-full h-24 object-cover rounded"
-        />
-        <p className="mt-1 text-center font-semibold">{recipe.name}</p>
+        <div className="relative">
+          <img
+            src={recipe.imageUrl}
+            alt={recipe.name}
+            className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+            <div className="flex items-center gap-1 text-white text-xs">
+              <ChefHat className="w-3 h-3" />
+              <span className="font-medium">{recipe.area}</span>
+            </div>
+          </div>
+        </div>
+        <div className="p-3">
+          <p className="text-sm font-semibold text-gray-900 truncate">
+            {recipe.name}
+          </p>
+          <p className="text-xs text-gray-600 mt-1">{recipe.category}</p>
+        </div>
       </div>
     );
   }
 
   // Drop target for grid cells
   function MealCell({ dayIndex, meal }: { dayIndex: number; meal: MealSlot }) {
-    const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>(() => ({
+    const [{ isOver, canDrop }, drop] = useDrop<
+      DragItem,
+      void,
+      { isOver: boolean; canDrop: boolean }
+    >(() => ({
       accept: ["RECIPE", "PLACED_RECIPE"],
       drop: (item: DragItem) => {
         setPlacedRecipes((prev) => {
           // Remove the recipe from its old cell if it is a moved recipe
           let filtered = prev;
-          if ("dayIndex" in item && "meal" in item && item.dayIndex !== undefined && item.meal !== undefined) {
+          if (
+            "dayIndex" in item &&
+            "meal" in item &&
+            item.dayIndex !== undefined &&
+            item.meal !== undefined
+          ) {
             filtered = prev.filter(
               (r) => !(r.dayIndex === item.dayIndex && r.meal === item.meal)
             );
@@ -242,14 +397,37 @@ export default function MealPlan() {
       (r) => r.dayIndex === dayIndex && r.meal === meal
     );
 
+    const getMealColor = (meal: MealSlot) => {
+      switch (meal) {
+        case "breakfast":
+          return "text-blue-500";
+        case "lunch":
+          return "text-orange-500";
+        case "dinner":
+          return "text-green-500";
+        default:
+          return "text-neutral-800";
+      }
+    };
+
     return (
       <div
         ref={drop as any}
-        className={`border h-32 p-1 flex flex-col items-center justify-center rounded ${
-          isOver && canDrop ? "bg-green-200" : "bg-gray-50"
+        className={`border-2 border-dashed rounded-xl p-3 flex flex-col items-center justify-center min-h-[120px] transition-all duration-200 ${
+          isOver && canDrop
+            ? "bg-green-100 border-green-400"
+            : placedRecipe
+            ? "bg-white border-gray-200"
+            : "bg-gray-50 border-gray-200"
         }`}
       >
-        <div className="text-xs font-semibold mb-1">{meal}</div>
+        <div
+          className={cn(
+            "text-xs font-semibold mb-2 text-gray-600 flex items-center gap-1"
+          )}
+        >
+          <span className="capitalize">{meal}</span>
+        </div>
         {placedRecipe ? (
           <DraggablePlacedRecipe
             recipe={placedRecipe.recipe}
@@ -257,22 +435,33 @@ export default function MealPlan() {
             meal={meal}
           />
         ) : (
-          <span className="text-gray-400 text-xs">Drop recipe here</span>
+          <div className="text-center">
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-2">
+              <ChefHat
+                className={cn("w-4 h-4 text-gray-400", getMealColor(meal))}
+              />
+            </div>
+            <span className="text-gray-400 text-xs">Drop recipe here</span>
+          </div>
         )}
       </div>
     );
   }
 
-  function DraggablePlacedRecipe({ 
-    recipe, 
-    dayIndex, 
-    meal 
-  }: { 
-    recipe: Recipe; 
-    dayIndex: number; 
-    meal: MealSlot; 
+  function DraggablePlacedRecipe({
+    recipe,
+    dayIndex,
+    meal,
+  }: {
+    recipe: Recipe;
+    dayIndex: number;
+    meal: MealSlot;
   }) {
-    const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>(() => ({
+    const [{ isDragging }, drag] = useDrag<
+      DragItem,
+      void,
+      { isDragging: boolean }
+    >(() => ({
       type: "PLACED_RECIPE",
       item: { recipe, dayIndex, meal },
       collect: (monitor) => ({
@@ -282,31 +471,42 @@ export default function MealPlan() {
 
     const handleRemove = (e: React.MouseEvent) => {
       e.stopPropagation();
-      setPlacedRecipes((prev) => 
+      setPlacedRecipes((prev) =>
         prev.filter((r) => !(r.dayIndex === dayIndex && r.meal === meal))
       );
     };
 
+    const [open, setOpen] = useState(false);
+
     return (
       <div
         ref={drag as any}
-        className={`relative cursor-move ${isDragging ? "opacity-50" : "opacity-100"}`}
+        className={`relative cursor-move ${
+          isDragging ? "opacity-50" : "opacity-100"
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
       >
-        <img
-          src={recipe.imageUrl}
-          alt={recipe.name}
-          className="h-16 w-full object-cover rounded"
-        />
-        <p className="text-sm truncate">{recipe.name}</p>
-        
-        {/* Remove button */}
-        <button
-          onClick={handleRemove}
-          className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-colors"
-          title="Remove recipe"
-        >
-          <X className="w-3 h-3" />
-        </button>
+        <div className="relative">
+          <img
+            src={recipe.imageUrl}
+            alt={recipe.name}
+            className="h-16 w-full object-cover rounded-lg"
+          />
+          <button
+            onClick={handleRemove}
+            className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-colors"
+            title="Remove recipe"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+        <p className="text-xs font-medium text-gray-900 truncate mt-1">
+          {recipe.name}
+        </p>
+        <RecipeDetailsPopup open={open} setOpen={setOpen} recipe={recipe} />
       </div>
     );
   }
@@ -314,102 +514,220 @@ export default function MealPlan() {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
+  /**
+   * Returns the list of recipes from `userRecipes` that are used in `plan`.
+   * Each recipe appears at most once, even if it occurs multiple times in the plan.
+   * This is useful when you only need the unique recipes from the plan.
+   */
+  function getPlanRecipes(plan: Plan, userRecipes: Recipe[]): Recipe[] {
+    // Step 1: Extract all recipe IDs from the plan
+    const recipeIds = new Set<string>();
+    for (const day of plan.days) {
+      for (const meal of day.meals) {
+        recipeIds.add(meal.recipeId);
+      }
+    }
+
+    // Step 2: Filter userRecipes to keep only those in the plan
+    return userRecipes.filter((recipe) => recipeIds.has(recipe.id));
+  }
+
+  /**
+   * Returns the list of recipes from `userRecipes` that are used in `plan`,
+   * keeping duplicates if a recipe appears multiple times.
+   * This is useful when you need to preserve occurrences (e.g., for total ingredient amounts).
+   */
+  function getPlanRecipesWithDuplicates(
+    plan: Plan,
+    userRecipes: Recipe[]
+  ): Recipe[] {
+    const result: Recipe[] = [];
+
+    for (const day of plan.days) {
+      for (const meal of day.meals) {
+        const recipe = userRecipes.find((r) => r.id === meal.recipeId);
+        if (recipe) {
+          result.push(recipe); // push every occurrence
+        }
+      }
+    }
+
+    return result;
+  }
+
+  // recipes in the grid
+  if (currentPlan) {
+    const planRecipes = getPlanRecipesWithDuplicates(currentPlan, userRecipes);
+    console.log(planRecipes);
+    console.log(exportShoppingList(currentPlan, planRecipes));
+  }
+
   return (
-    <div>
-      <Header activePage="plan" />
+    <div className="h-screen flex flex-col bg-gray-50">
+      <Header activePage="plan" onSaveRecipe={handleSaveRecipe} />
       <DndProvider backend={HTML5Backend}>
-        <div className="flex h-screen gap-4 p-4 bg-gray-100">
+        <div className="flex flex-1 gap-6 p-6">
           {/* Left column: user recipes */}
-          <div className="w-72 overflow-y-auto bg-white p-4 rounded shadow">
-            <h2 className="text-lg font-bold mb-4">Your Recipes</h2>
-            {userRecipes.length === 0 && <p>No recipes found.</p>}
-            {userRecipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
-            ))}
+          <div className="w-80 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Your Recipes
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Drag recipes to plan your week
+                  </p>
+                </div>
+              </div>
+              {userRecipes.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <ChefHat className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">No recipes found</p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {userRecipes.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
           </div>
 
-          {/* Right grid: 7 columns x 3 rows */}
-          <div className="flex-1 overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-4">
-                <h2 className="text-lg font-bold">Meal Plan</h2>
-                
-                {/* Date Selector */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[240px] justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => date && setSelectedDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+          {/* Right grid: meal planning area */}
+          <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg">
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900">
+                        Meal Plan
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        Plan your weekly meals
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Week Display */}
-                <div className="text-sm text-gray-600">
-                  {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
+                  {/* Date Selector */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20",
+                          !selectedDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? (
+                          format(selectedDate, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => date && setSelectedDate(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Week Display */}
+                  <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
+                    {format(weekStart, "MMM d")} -{" "}
+                    {format(weekEnd, "MMM d, yyyy")}
+                  </div>
+
+                  {/* Plan Status */}
+                  {currentPlan && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-lg">
+                      <CheckCircle className="w-4 h-4" />
+                      Plan exists
+                    </div>
+                  )}
                 </div>
 
-                {/* Plan Status */}
-                {currentPlan && (
-                  <div className="text-sm text-green-600 font-medium">
-                    ✓ Plan exists
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={handleExportShoppingList}
+                    disabled={placedRecipes.length === 0}
+                    variant="outline"
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl border-gray-200 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Export Shopping List
+                  </Button>
+                  <Button
+                    onClick={handleSavePlan}
+                    disabled={isSaving || placedRecipes.length === 0}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {isSaving
+                      ? "Saving..."
+                      : currentPlan
+                      ? "Update Plan"
+                      : "Save Plan"}
+                  </Button>
+                </div>
               </div>
-
-              <Button 
-                onClick={handleSavePlan}
-                disabled={isSaving || placedRecipes.length === 0}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                {isSaving ? "Saving..." : currentPlan ? "Update Plan" : "Save Plan"}
-              </Button>
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
-              {/* Header row with days */}
-              {days.map((day) => (
-                <div
-                  key={day}
-                  className="text-center font-semibold p-1 bg-gray-200 rounded"
-                >
-                  {day}
-                </div>
-              ))}
+            <div className="p-6">
+              <div className="grid grid-cols-7 gap-3">
+                {/* Header row with days */}
+                {days.map((day) => (
+                  <div
+                    key={day}
+                    className="text-center font-semibold p-3 bg-gray-50 rounded-xl text-gray-700"
+                  >
+                    {day}
+                  </div>
+                ))}
 
-              {/* For each meal (row) x day (column) */}
-              {meals.map((meal) =>
-                days.map((_, dayIndex) => (
-                  <MealCell
-                    key={`${meal}-${dayIndex}`}
-                    meal={meal}
-                    dayIndex={dayIndex}
-                  />
-                ))
-              )}
+                {/* For each meal (row) x day (column) */}
+                {meals.map((meal) =>
+                  days.map((_, dayIndex) => (
+                    <MealCell
+                      key={`${meal}-${dayIndex}`}
+                      meal={meal}
+                      dayIndex={dayIndex}
+                    />
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
       </DndProvider>
+
+      {/* Shopping List Popup */}
+      <ShoppingListPopup
+        open={shoppingListOpen}
+        setOpen={setShoppingListOpen}
+        shoppingList={
+          currentPlan
+            ? exportShoppingList(currentPlan, getPlanRecipesWithDuplicates(currentPlan, userRecipes))
+            : placedRecipes.length > 0
+            ? exportShoppingList(convertToPlan(), getPlanRecipesWithDuplicates(convertToPlan(), userRecipes))
+            : []
+        }
+      />
     </div>
   );
 }

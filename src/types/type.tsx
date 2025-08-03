@@ -154,6 +154,15 @@ type Meal = {
   recipeId: string; // references a Recipe
 };
 
-export type { Category, Area, RecipeIngredient, Recipe, RawRecipe, Plan, Day, Meal, MealType, DayOfWeek };
+type ShoppingListItem = {
+  name: string;
+  totalAmount: string;
+  id: string;
+  checked: boolean;
+  excluded: boolean;
+  order: number;
+};
+
+export type { Category, Area, RecipeIngredient, Recipe, RawRecipe, Plan, Day, Meal, MealType, DayOfWeek, ShoppingListItem };
 
 export { categories, areas };
