@@ -8,6 +8,7 @@ import type {
   Meal,
   MealType,
   DayOfWeek,
+  ShoppingListItem,
 } from "@/types/type";
 import {
   getUserRecipes,
@@ -62,11 +63,6 @@ type DragItem = {
   recipe: Recipe;
   dayIndex?: number;
   meal?: MealSlot;
-};
-
-type ShoppingListItem = {
-  name: string;
-  totalAmount: string; // combined string, e.g., "300 g" or "200 g + 1 cup"
 };
 
 function exportShoppingList(plan: Plan, recipes: Recipe[]): ShoppingListItem[] {

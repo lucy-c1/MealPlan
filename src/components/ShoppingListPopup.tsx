@@ -5,11 +5,7 @@ import {
   DialogTitle,
 } from "@headlessui/react";
 import { X, ShoppingCart, Printer } from "lucide-react";
-
-type ShoppingListItem = {
-  name: string;
-  totalAmount: string;
-};
+import type { ShoppingListItem } from "@/types/type";
 
 export default function ShoppingListPopup({
   open,
