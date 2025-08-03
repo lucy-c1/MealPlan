@@ -2,7 +2,7 @@ import { useState } from "react";
 import LoginForm from "../components/LoginForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Calendar, Bookmark, Search, Sparkles } from "lucide-react";
+import { ChefHat, Calendar, Bookmark, Search, ShoppingCart } from "lucide-react";
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -127,11 +127,11 @@ export default function Login() {
 
             <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
               <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-lg">
-                <Sparkles className="w-5 h-5 text-orange-600" />
+                <ShoppingCart className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Smart Suggestions</h3>
-                <p className="text-sm text-gray-600">Get personalized meal ideas based on your preferences</p>
+                <h3 className="font-semibold text-gray-900 mb-1">Shopping Lists</h3>
+                <p className="text-sm text-gray-600">Automatically generate shopping lists based on your weekly meal plan</p>
               </div>
             </div>
           </div>
