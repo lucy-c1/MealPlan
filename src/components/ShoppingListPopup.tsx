@@ -6,7 +6,7 @@ import {
 } from "@headlessui/react";
 import { X, ShoppingCart, Printer, GripVertical, Check, X as XIcon } from "lucide-react";
 import type { ShoppingListItem } from "@/types/type";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
@@ -28,7 +28,9 @@ function DraggableShoppingItem({
   toggleChecked: (id: string) => void;
   toggleExcluded: (id: string) => void;
 }) {
-  const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
+  const ref = useRef<HTMLDivElement>(null);
+  
+  const [{ isDragging }, drag] = useDrag({
     type: "SHOPPING_ITEM",
     item: { id: item.id, index },
     collect: (monitor) => ({
@@ -36,23 +38,63 @@ function DraggableShoppingItem({
     }),
   });
 
-  const [, drop] = useDrop<DragItem, void, {}>({
+  const [, drop] = useDrop({
     accept: "SHOPPING_ITEM",
-    hover: (draggedItem: DragItem) => {
-      if (draggedItem.index !== index) {
-        moveItem(draggedItem.index, index);
-        draggedItem.index = index;
+    hover: (draggedItem: DragItem, monitor) => {
+      if (!ref.current) {
+        return;
       }
+      const dragIndex = draggedItem.index;
+      const hoverIndex = index;
+
+      // Don't replace items with themselves
+      if (dragIndex === hoverIndex) {
+        return;
+      }
+
+      // Determine rectangle on screen
+      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+
+      // Get vertical middle
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+
+      // Determine mouse position
+      const clientOffset = monitor.getClientOffset();
+
+      // Get pixels to the top
+      const hoverClientY = clientOffset!.y - hoverBoundingRect.top;
+
+      // Only perform the move when the mouse has crossed half of the items height
+      // When dragging downwards, only move when the cursor is below 50%
+      // When dragging upwards, only move when the cursor is above 50%
+
+      // Dragging downwards
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return;
+      }
+
+      // Dragging upwards
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return;
+      }
+
+      // Time to actually perform the action
+      moveItem(dragIndex, hoverIndex);
+
+      // Note: we're mutating the monitor item here!
+      // Generally it's better to avoid mutations,
+      // but it's good here for the sake of performance
+      // to avoid expensive index searches.
+      draggedItem.index = hoverIndex;
     },
   });
+
+  drag(drop(ref));
 
   if (item.excluded) {
     return (
       <div
-        ref={(node) => {
-          drag(node);
-          drop(node);
-        }}
+        ref={ref}
         className={`flex items-center gap-3 py-3 px-4 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 transition-all duration-200 ${
           isDragging ? "opacity-50" : "opacity-100"
         }`}
@@ -77,10 +119,7 @@ function DraggableShoppingItem({
 
   return (
     <div
-      ref={(node) => {
-        drag(node);
-        drop(node);
-      }}
+      ref={ref}
       className={`flex items-center gap-3 py-3 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-200 ${
         isDragging ? "opacity-50" : "opacity-100"
       } ${item.checked ? "bg-green-50 border-green-200" : ""}`}
@@ -139,17 +178,23 @@ export default function ShoppingListPopup({
   }, [shoppingList]);
 
   const moveItem = (dragIndex: number, hoverIndex: number) => {
-    const draggedItem = items[dragIndex];
-    const newItems = [...items];
-    newItems.splice(dragIndex, 1);
-    newItems.splice(hoverIndex, 0, draggedItem);
-    
-    // Update order property
-    newItems.forEach((item, index) => {
-      item.order = index;
+    setItems((prevItems) => {
+      const newItems = [...prevItems];
+      const draggedItem = newItems[dragIndex];
+      
+      // Remove the dragged item
+      newItems.splice(dragIndex, 1);
+      
+      // Insert it at the new position
+      newItems.splice(hoverIndex, 0, draggedItem);
+      
+      // Update order property
+      newItems.forEach((item, index) => {
+        item.order = index;
+      });
+      
+      return newItems;
     });
-    
-    setItems(newItems);
   };
 
   const toggleChecked = (id: string) => {
