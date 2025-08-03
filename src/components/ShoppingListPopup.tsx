@@ -231,30 +231,171 @@ export default function ShoppingListPopup({
           <head>
             <title>Shopping List</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h1 { color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
-              .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-              .item:last-child { border-bottom: none; }
-              .name { font-weight: 500; }
-              .amount { color: #666; }
-              .checked { text-decoration: line-through; color: #999; }
-              .summary { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+              @media print {
+                body { margin: 0; padding: 15px; }
+                .no-print { display: none; }
+              }
+              
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                margin: 0; 
+                padding: 20px; 
+                background: #f8fafc;
+                color: #1e293b;
+              }
+              
+              .container {
+                max-width: 400px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+              }
+              
+              .header {
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                color: white;
+                padding: 20px;
+                text-align: center;
+              }
+              
+              .header h1 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+              }
+              
+              .date {
+                font-size: 14px;
+                opacity: 0.9;
+                margin-top: 4px;
+              }
+              
+              .content {
+                padding: 20px;
+              }
+              
+              .item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 0;
+                border-bottom: 1px solid #e2e8f0;
+                font-size: 14px;
+              }
+              
+              .item:last-child {
+                border-bottom: none;
+              }
+              
+              .item:hover {
+                background: #f8fafc;
+              }
+              
+              .name {
+                font-weight: 600;
+                color: #1e293b;
+                flex: 1;
+              }
+              
+              .amount {
+                color: #64748b;
+                font-size: 13px;
+                background: #f1f5f9;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-weight: 500;
+                min-width: 60px;
+                text-align: center;
+              }
+              
+              .summary {
+                margin-top: 20px;
+                padding: 16px;
+                background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+                border-radius: 8px;
+                border-left: 4px solid #3b82f6;
+              }
+              
+              .summary-text {
+                font-size: 13px;
+                color: #475569;
+                margin: 0;
+                font-weight: 500;
+              }
+              
+              .stats {
+                display: flex;
+                gap: 16px;
+                margin-top: 8px;
+              }
+              
+              .stat {
+                font-size: 12px;
+                color: #64748b;
+              }
+              
+              .stat strong {
+                color: #3b82f6;
+              }
+              
+              .empty-state {
+                text-align: center;
+                padding: 40px 20px;
+                color: #64748b;
+              }
+              
+              .empty-state p {
+                margin: 8px 0 0 0;
+                font-size: 14px;
+              }
             </style>
           </head>
           <body>
-            <h1>🛒 Shopping List</h1>
-            ${itemsToPrint
-              .map(
-                (item) => `
-              <div class="item">
-                <span class="name">${item.name}</span>
-                <span class="amount">${item.totalAmount}</span>
+            <div class="container">
+              <div class="header">
+                <h1>🛒 Shopping List</h1>
+                <div class="date">${new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</div>
               </div>
-            `
-              )
-              .join("")}
-            <div class="summary">
-              <strong>Summary:</strong> ${itemsToPrint.length} items to buy, ${getCheckedItems().length} items completed
+              
+              <div class="content">
+                ${itemsToPrint.length === 0 ? `
+                  <div class="empty-state">
+                    <p>🎉 All items completed!</p>
+                    <p>Your shopping list is empty.</p>
+                  </div>
+                ` : itemsToPrint.map(item => `
+                  <div class="item">
+                    <span class="name">${item.name}</span>
+                    <span class="amount">${item.totalAmount}</span>
+                  </div>
+                `).join('')}
+                
+                <div class="summary">
+                  <p class="summary-text">📋 Shopping List Summary</p>
+                  <div class="stats">
+                    <div class="stat">
+                      <strong>${itemsToPrint.length}</strong> items to buy
+                    </div>
+                    <div class="stat">
+                      <strong>${getCheckedItems().length}</strong> completed
+                    </div>
+                    <div class="stat">
+                      <strong>${getExcludedItems().length}</strong> excluded
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </body>
         </html>
