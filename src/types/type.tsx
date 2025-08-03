@@ -157,6 +157,10 @@ type Meal = {
 type ShoppingListItem = {
   name: string;
   totalAmount: string;
+  id: string;
+  checked: boolean;
+  excluded: boolean;
+  order: number;
 };
 
 export type { Category, Area, RecipeIngredient, Recipe, RawRecipe, Plan, Day, Meal, MealType, DayOfWeek, ShoppingListItem };

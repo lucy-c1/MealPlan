@@ -91,11 +91,19 @@ function exportShoppingList(plan: Plan, recipes: Recipe[]): ShoppingListItem[] {
 
   // 3. Build final list
   const shoppingList: ShoppingListItem[] = [];
+  let orderIndex = 0;
   for (const [nameKey, amounts] of ingredientMap) {
     const displayName = nameKey[0].toUpperCase() + nameKey.slice(1);
     // Optionally, try to combine numeric amounts
     const combined = combineAmounts(amounts);
-    shoppingList.push({ name: displayName, totalAmount: combined });
+    shoppingList.push({ 
+      id: crypto.randomUUID(),
+      name: displayName, 
+      totalAmount: combined,
+      checked: false,
+      excluded: false,
+      order: orderIndex++
+    });
   }
 
   return shoppingList;
