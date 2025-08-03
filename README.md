@@ -223,7 +223,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- **Live Demo**: [https://mealplan-app.web.app](Coming soon!)
+- **Live Demo**: (Coming soon!)
 - **GitHub Repository**: [https://github.com/lucy-c1/mealplan](https://github.com/lucy-c1/mealplan)
 
 ## 📞 Contact
