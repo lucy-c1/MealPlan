@@ -4,7 +4,14 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react";
-import { X, ShoppingCart, Printer, GripVertical, Check, X as XIcon } from "lucide-react";
+import {
+  X,
+  ShoppingCart,
+  Printer,
+  GripVertical,
+  Check,
+  X as XIcon,
+} from "lucide-react";
 import type { ShoppingListItem } from "@/types/type";
 import { useState, useEffect, useRef } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
@@ -29,7 +36,7 @@ function DraggableShoppingItem({
   toggleExcluded: (id: string) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  
+
   const [{ isDragging }, drag] = useDrag({
     type: "SHOPPING_ITEM",
     item: { id: item.id, index },
@@ -56,7 +63,8 @@ function DraggableShoppingItem({
       const hoverBoundingRect = ref.current?.getBoundingClientRect();
 
       // Get vertical middle
-      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const hoverMiddleY =
+        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
 
       // Determine mouse position
       const clientOffset = monitor.getClientOffset();
@@ -103,8 +111,12 @@ function DraggableShoppingItem({
           <GripVertical className="w-4 h-4" />
         </div>
         <div className="flex-1">
-          <span className="text-gray-400 line-through font-medium">{item.name}</span>
-          <span className="text-gray-400 text-sm ml-2 line-through">{item.totalAmount}</span>
+          <span className="text-gray-400 line-through font-medium">
+            {item.name}
+          </span>
+          <span className="text-gray-400 text-sm ml-2 line-through">
+            {item.totalAmount}
+          </span>
         </div>
         <button
           onClick={() => toggleExcluded(item.id)}
@@ -127,7 +139,7 @@ function DraggableShoppingItem({
       <div className="flex items-center justify-center w-5 h-5 text-gray-400 cursor-move">
         <GripVertical className="w-4 h-4" />
       </div>
-      
+
       <button
         onClick={() => toggleChecked(item.id)}
         className={`flex items-center justify-center w-5 h-5 rounded border-2 transition-colors ${
@@ -139,16 +151,24 @@ function DraggableShoppingItem({
       >
         {item.checked && <Check className="w-3 h-3" />}
       </button>
-      
+
       <div className="flex-1">
-        <span className={`font-medium ${item.checked ? "text-green-700 line-through" : "text-gray-700"}`}>
+        <span
+          className={`font-medium ${
+            item.checked ? "text-green-700 line-through" : "text-gray-700"
+          }`}
+        >
           {item.name}
         </span>
-        <span className={`text-sm ml-2 ${item.checked ? "text-green-600 line-through" : "text-gray-500"}`}>
+        <span
+          className={`text-sm ml-2 ${
+            item.checked ? "text-green-600 line-through" : "text-gray-500"
+          }`}
+        >
           {item.totalAmount}
         </span>
       </div>
-      
+
       <button
         onClick={() => toggleExcluded(item.id)}
         className="p-1 text-gray-400 hover:text-red-500 transition-colors"
@@ -181,49 +201,54 @@ export default function ShoppingListPopup({
     setItems((prevItems) => {
       const newItems = [...prevItems];
       const draggedItem = newItems[dragIndex];
-      
+
       // Remove the dragged item
       newItems.splice(dragIndex, 1);
-      
+
       // Insert it at the new position
       newItems.splice(hoverIndex, 0, draggedItem);
-      
+
       // Update order property
       newItems.forEach((item, index) => {
         item.order = index;
       });
-      
+
       return newItems;
     });
   };
 
   const toggleChecked = (id: string) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, checked: !item.checked } : item
-    ));
+    setItems(
+      items.map((item) =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      )
+    );
   };
 
   const toggleExcluded = (id: string) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, excluded: !item.excluded } : item
-    ));
+    setItems(
+      items.map((item) =>
+        item.id === id ? { ...item, excluded: !item.excluded } : item
+      )
+    );
   };
 
   const getFilteredItems = () => {
     if (showExcluded) {
-      return items.filter(item => item.excluded);
+      return items.filter((item) => item.excluded);
     }
-    return items.filter(item => !item.excluded);
+    return items.filter((item) => !item.excluded);
   };
 
-  const getActiveItems = () => items.filter(item => !item.excluded);
-  const getCheckedItems = () => items.filter(item => item.checked && !item.excluded);
-  const getExcludedItems = () => items.filter(item => item.excluded);
+  const getActiveItems = () => items.filter((item) => !item.excluded);
+  const getCheckedItems = () =>
+    items.filter((item) => item.checked && !item.excluded);
+  const getExcludedItems = () => items.filter((item) => item.excluded);
 
   const handlePrint = () => {
     const activeItems = getActiveItems();
-    const itemsToPrint = activeItems.filter(item => !item.checked);
-    
+    const itemsToPrint = activeItems.filter((item) => !item.checked);
+
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
@@ -360,26 +385,34 @@ export default function ShoppingListPopup({
             <div class="container">
               <div class="header">
                 <h1>🛒 Shopping List</h1>
-                <div class="date">${new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                <div class="date">${new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}</div>
               </div>
               
               <div class="content">
-                ${itemsToPrint.length === 0 ? `
+                ${
+                  itemsToPrint.length === 0
+                    ? `
                   <div class="empty-state">
                     <p>🎉 All items completed!</p>
                     <p>Your shopping list is empty.</p>
                   </div>
-                ` : itemsToPrint.map(item => `
+                `
+                    : itemsToPrint
+                        .map(
+                          (item) => `
                   <div class="item">
                     <span class="name">${item.name}</span>
                     <span class="amount">${item.totalAmount}</span>
                   </div>
-                `).join('')}
+                `
+                        )
+                        .join("")
+                }
                 
                 <div class="summary">
                   <p class="summary-text">📋 Shopping List Summary</p>
@@ -428,7 +461,10 @@ export default function ShoppingListPopup({
                 <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
                   <ShoppingCart className="w-5 h-5 text-white" />
                 </div>
-                <DialogTitle as="h3" className="text-2xl font-bold text-gray-900">
+                <DialogTitle
+                  as="h3"
+                  className="text-2xl font-bold text-gray-900"
+                >
                   Shopping List
                 </DialogTitle>
               </div>
@@ -463,30 +499,46 @@ export default function ShoppingListPopup({
                     No ingredients to buy
                   </h3>
                   <p className="text-gray-600">
-                    Add some recipes to your meal plan to generate a shopping list.
+                    Add some recipes to your meal plan to generate a shopping
+                    list.
                   </p>
                 </div>
               ) : (
                 <DndProvider backend={HTML5Backend}>
                   <div className="space-y-4">
+                    {/* Tips */}
+                    <div className="p-4 bg-blue-50 rounded-xl">
+                      <p className="text-sm text-blue-700">
+                        💡 <strong>Tips:</strong> Drag items to reorder, check
+                        off completed items, or exclude items you don't need.
+                        Only unchecked items will be included in the printed
+                        list.
+                      </p>
+                    </div>
                     {/* Summary Stats */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span>{activeItems.length} active items</span>
                         {checkedCount > 0 && (
-                          <span className="text-green-600">{checkedCount} completed</span>
+                          <span className="text-green-600">
+                            {checkedCount} completed
+                          </span>
                         )}
                         {excludedCount > 0 && (
-                          <span className="text-gray-400">{excludedCount} excluded</span>
+                          <span className="text-gray-400">
+                            {excludedCount} excluded
+                          </span>
                         )}
                       </div>
-                      
+
                       {excludedCount > 0 && (
                         <button
                           onClick={() => setShowExcluded(!showExcluded)}
                           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
-                          {showExcluded ? "Show Active Items" : "Show Excluded Items"}
+                          {showExcluded
+                            ? "Show Active Items"
+                            : "Show Excluded Items"}
                         </button>
                       )}
                     </div>
@@ -497,20 +549,12 @@ export default function ShoppingListPopup({
                         <DraggableShoppingItem
                           key={item.id}
                           item={item}
-                          index={items.findIndex(i => i.id === item.id)}
+                          index={items.findIndex((i) => i.id === item.id)}
                           moveItem={moveItem}
                           toggleChecked={toggleChecked}
                           toggleExcluded={toggleExcluded}
                         />
                       ))}
-                    </div>
-
-                    {/* Tips */}
-                    <div className="mt-6 p-4 bg-blue-50 rounded-xl">
-                      <p className="text-sm text-blue-700">
-                        💡 <strong>Tips:</strong> Drag items to reorder, check off completed items, or exclude items you don't need. 
-                        Only unchecked items will be included in the printed list.
-                      </p>
                     </div>
                   </div>
                 </DndProvider>
