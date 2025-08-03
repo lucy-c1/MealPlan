@@ -32,7 +32,10 @@ import {
   ChefHat,
   Clock,
   CheckCircle,
+  ShoppingCart,
 } from "lucide-react";
+import RecipeDetailsPopup from "@/components/RecipeDetailsPopup";
+import ShoppingListPopup from "@/components/ShoppingListPopup";
 import {
   format,
   startOfWeek,
@@ -44,7 +47,6 @@ import { cn } from "@/lib/utils";
 
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import RecipeDetailsPopup from "@/components/RecipeDetailsPopup";
 
 type MealSlot = "breakfast" | "lunch" | "dinner";
 const meals: MealSlot[] = ["breakfast", "lunch", "dinner"];
@@ -62,6 +64,61 @@ type DragItem = {
   meal?: MealSlot;
 };
 
+type ShoppingListItem = {
+  name: string;
+  totalAmount: string; // combined string, e.g., "300 g" or "200 g + 1 cup"
+};
+
+function exportShoppingList(plan: Plan, recipes: Recipe[]): ShoppingListItem[] {
+  // Create a quick lookup for recipes by ID
+  const recipeMap = new Map(recipes.map((r) => [r.id, r]));
+
+  // Ingredient aggregation map
+  const ingredientMap = new Map<string, string[]>(); // name → amounts array
+
+  // 1. Loop through plan days/meals
+  for (const day of plan.days) {
+    for (const meal of day.meals) {
+      const recipe = recipeMap.get(meal.recipeId);
+      if (!recipe) continue;
+
+      // 2. Aggregate ingredients
+      for (const ing of recipe.ingredients) {
+        const nameKey = ing.name.trim().toLowerCase();
+        if (!ingredientMap.has(nameKey)) {
+          ingredientMap.set(nameKey, []);
+        }
+        ingredientMap.get(nameKey)!.push(ing.amount.trim());
+      }
+    }
+  }
+
+  // 3. Build final list
+  const shoppingList: ShoppingListItem[] = [];
+  for (const [nameKey, amounts] of ingredientMap) {
+    const displayName = nameKey[0].toUpperCase() + nameKey.slice(1);
+    // Optionally, try to combine numeric amounts
+    const combined = combineAmounts(amounts);
+    shoppingList.push({ name: displayName, totalAmount: combined });
+  }
+
+  return shoppingList;
+}
+
+// Naive combining: if all amounts are numeric + same unit, sum them.
+// Otherwise, join them with " + "
+function combineAmounts(amounts: string[]): string {
+  // Simple regex to match number + optional unit
+  const parsed = amounts.map((a) => a.match(/^(\d+(?:\.\d+)?)\s*(.*)$/));
+  if (parsed.every((p) => p !== null && p[2] === parsed[0]![2])) {
+    // Same unit
+    const total = parsed.reduce((sum, p) => sum + parseFloat(p![1]), 0);
+    const unit = parsed[0]![2];
+    return `${total} ${unit}`.trim();
+  }
+  return amounts.join(" + ");
+}
+
 export default function MealPlan() {
   const { user } = useAuth();
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
@@ -75,6 +132,9 @@ export default function MealPlan() {
   // Date selection state
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
+
+  // Shopping list state
+  const [shoppingListOpen, setShoppingListOpen] = useState(false);
 
   useEffect(() => {
     if (user?.uid) {
@@ -238,6 +298,16 @@ export default function MealPlan() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  // Handle shopping list export
+  function handleExportShoppingList() {
+    if (placedRecipes.length === 0) {
+      toast.error("Please add some recipes to your meal plan before generating a shopping list.");
+      return;
+    }
+
+    setShoppingListOpen(true);
   }
 
   // Drag source for recipes
@@ -440,6 +510,54 @@ export default function MealPlan() {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
+  /**
+   * Returns the list of recipes from `userRecipes` that are used in `plan`.
+   * Each recipe appears at most once, even if it occurs multiple times in the plan.
+   * This is useful when you only need the unique recipes from the plan.
+   */
+  function getPlanRecipes(plan: Plan, userRecipes: Recipe[]): Recipe[] {
+    // Step 1: Extract all recipe IDs from the plan
+    const recipeIds = new Set<string>();
+    for (const day of plan.days) {
+      for (const meal of day.meals) {
+        recipeIds.add(meal.recipeId);
+      }
+    }
+
+    // Step 2: Filter userRecipes to keep only those in the plan
+    return userRecipes.filter((recipe) => recipeIds.has(recipe.id));
+  }
+
+  /**
+   * Returns the list of recipes from `userRecipes` that are used in `plan`,
+   * keeping duplicates if a recipe appears multiple times.
+   * This is useful when you need to preserve occurrences (e.g., for total ingredient amounts).
+   */
+  function getPlanRecipesWithDuplicates(
+    plan: Plan,
+    userRecipes: Recipe[]
+  ): Recipe[] {
+    const result: Recipe[] = [];
+
+    for (const day of plan.days) {
+      for (const meal of day.meals) {
+        const recipe = userRecipes.find((r) => r.id === meal.recipeId);
+        if (recipe) {
+          result.push(recipe); // push every occurrence
+        }
+      }
+    }
+
+    return result;
+  }
+
+  // recipes in the grid
+  if (currentPlan) {
+    const planRecipes = getPlanRecipesWithDuplicates(currentPlan, userRecipes);
+    console.log(planRecipes);
+    console.log(exportShoppingList(currentPlan, planRecipes));
+  }
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <Header activePage="plan" onSaveRecipe={handleSaveRecipe} />
@@ -536,22 +654,33 @@ export default function MealPlan() {
                   )}
                 </div>
 
-                <Button
-                  onClick={handleSavePlan}
-                  disabled={isSaving || placedRecipes.length === 0}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {isSaving
-                    ? "Saving..."
-                    : currentPlan
-                    ? "Update Plan"
-                    : "Save Plan"}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={handleExportShoppingList}
+                    disabled={placedRecipes.length === 0}
+                    variant="outline"
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl border-gray-200 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Export Shopping List
+                  </Button>
+                  <Button
+                    onClick={handleSavePlan}
+                    disabled={isSaving || placedRecipes.length === 0}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {isSaving
+                      ? "Saving..."
+                      : currentPlan
+                      ? "Update Plan"
+                      : "Save Plan"}
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -582,6 +711,19 @@ export default function MealPlan() {
           </div>
         </div>
       </DndProvider>
+
+      {/* Shopping List Popup */}
+      <ShoppingListPopup
+        open={shoppingListOpen}
+        setOpen={setShoppingListOpen}
+        shoppingList={
+          currentPlan
+            ? exportShoppingList(currentPlan, getPlanRecipesWithDuplicates(currentPlan, userRecipes))
+            : placedRecipes.length > 0
+            ? exportShoppingList(convertToPlan(), getPlanRecipesWithDuplicates(convertToPlan(), userRecipes))
+            : []
+        }
+      />
     </div>
   );
 }
