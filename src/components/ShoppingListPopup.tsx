@@ -17,7 +17,7 @@ export default function ShoppingListPopup({
   shoppingList: ShoppingListItem[];
 }) {
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
         <html>
@@ -34,12 +34,16 @@ export default function ShoppingListPopup({
           </head>
           <body>
             <h1>🛒 Shopping List</h1>
-            ${shoppingList.map(item => `
+            ${shoppingList
+              .map(
+                (item) => `
               <div class="item">
                 <span class="name">${item.name}</span>
                 <span class="amount">${item.totalAmount}</span>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </body>
         </html>
       `);
@@ -64,10 +68,13 @@ export default function ShoppingListPopup({
             {/* Header */}
             <div className="sticky top-0 z-20 flex justify-between items-center p-6 bg-white border-b border-gray-100 rounded-t-2xl">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-                  <ShoppingCart className="w-5 h-5 text-white" />
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg">
+                  <ShoppingCart className="w-5 h-5 text-blue-500" />
                 </div>
-                <DialogTitle as="h3" className="text-2xl font-bold text-gray-900">
+                <DialogTitle
+                  as="h3"
+                  className="text-2xl font-bold text-gray-900"
+                >
                   Shopping List
                 </DialogTitle>
               </div>
@@ -98,31 +105,43 @@ export default function ShoppingListPopup({
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <ShoppingCart className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No ingredients to buy</h3>
-                  <p className="text-gray-600">Add some recipes to your meal plan to generate a shopping list.</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No ingredients to buy
+                  </h3>
+                  <p className="text-gray-600">
+                    Add some recipes to your meal plan to generate a shopping
+                    list.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-600">
-                      {shoppingList.length} item{shoppingList.length !== 1 ? 's' : ''} to buy
+                      {shoppingList.length} item
+                      {shoppingList.length !== 1 ? "s" : ""} to buy
                     </p>
                   </div>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                     {shoppingList.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
-                        <span className="text-gray-700 font-medium">{item.name}</span>
+                      <div
+                        key={index}
+                        className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0"
+                      >
+                        <span className="text-gray-700 font-medium">
+                          {item.name}
+                        </span>
                         <span className="text-gray-500 text-sm bg-white px-3 py-1 rounded-full border border-gray-200">
                           {item.totalAmount}
                         </span>
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="mt-6 p-4 bg-blue-50 rounded-xl">
                     <p className="text-sm text-blue-700">
-                      💡 <strong>Tip:</strong> You can print this list or take a screenshot to bring to the store.
+                      💡 <strong>Tip:</strong> You can print this list or take a
+                      screenshot to bring to the store.
                     </p>
                   </div>
                 </div>
@@ -133,4 +152,4 @@ export default function ShoppingListPopup({
       </div>
     </Dialog>
   );
-} 
+}
