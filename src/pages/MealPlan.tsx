@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import RecipeDetailsPopup from "@/components/RecipeDetailsPopup";
 
 type MealSlot = "breakfast" | "lunch" | "dinner";
 const meals: MealSlot[] = ["breakfast", "lunch", "dinner"];
@@ -401,12 +402,18 @@ export default function MealPlan() {
       );
     };
 
+    const [open, setOpen] = useState(false);
+
     return (
       <div
         ref={drag as any}
         className={`relative cursor-move ${
           isDragging ? "opacity-50" : "opacity-100"
         }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
       >
         <div className="relative">
           <img
@@ -425,6 +432,7 @@ export default function MealPlan() {
         <p className="text-xs font-medium text-gray-900 truncate mt-1">
           {recipe.name}
         </p>
+        <RecipeDetailsPopup open={open} setOpen={setOpen} recipe={recipe} />
       </div>
     );
   }
