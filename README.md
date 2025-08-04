@@ -82,7 +82,6 @@ A modern, full-stack web application for intelligent meal planning and recipe ma
 2. **Install dependencies**
 
    ```bash
-   cd frontend
    npm install
    ```
 
