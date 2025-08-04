@@ -4,7 +4,7 @@ import {
   type RecipeIngredient,
 } from "../types/type";
 
-const API_URL = "http://localhost:5000/";
+const API_URL = "https://mealplanapi.onrender.com/";
 
 function _urlFor(path: string) {
   return API_URL + path;
