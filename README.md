@@ -223,7 +223,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- **Live Demo**: (Coming soon!)
+- **Live Demo**: [https://mealplanapi.onrender.com](https://mealplanapi.onrender.com)
 - **GitHub Repository**: [https://github.com/lucy-c1/mealplan](https://github.com/lucy-c1/mealplan)
 
 ## 📞 Contact
